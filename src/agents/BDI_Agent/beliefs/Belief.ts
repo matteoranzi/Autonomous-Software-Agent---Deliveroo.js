@@ -44,18 +44,18 @@ class Belief {
     me: Agent
 
     parcelsDecayTimer: ReturnType<typeof setInterval> | null = null;
+    tilesObservationTimer: ReturnType<typeof setInterval> | null = null;
 
     constructor(gameConfig: GameConfig, gameMap: GameMap, me: Agent) {
         this.gameConfig = gameConfig;
         this.me = me;
-        this._setGameMap(gameMap)
+        this._setupGameMap(gameMap)
 
         this.parcels = new Map<string, Parcel>();
         this.agents = new Map<string, Agent>();
-
     }
 
-    private _setGameMap(gameMap: GameMap): void {
+    private _setupGameMap(gameMap: GameMap): void {
         this.map = gameMap;
 
         // Decay the reward of the parcels every parcelsDecayInterval ms
@@ -70,15 +70,29 @@ class Belief {
                 }
             }, this.gameConfig.parcel.decay_interval);
         }
+
+        this.tilesObservationTimer = setInterval(() => {
+            this.updateLastObservedTiles();
+        }, this.gameConfig.clock);
     }
 
     updateMe(me: Agent): void {
         this.me = me;
     }
 
+    updateLastObservedTiles(): void {
+        this.map.grid.forEach((column, x) => {
+            column.forEach((tile, y) => {
+                if (this._isInsideObservingArea({ x, y })) {
+                    tile.lastTimeObserved = Date.now();
+                }
+            });
+        });
+    }
+
     updateBeliefs(dynamicBelief: DynamicBelief): void {
-        this.updateParcels(dynamicBelief.parcels)
-        this.updateAgents(dynamicBelief.agents)
+        this.updateParcels(dynamicBelief.parcels);
+        this.updateAgents(dynamicBelief.agents);
     }
 
     updateAgents(sensedAgents: Agent[]): void {
@@ -92,21 +106,25 @@ class Belief {
             this.parcels.set(sensedParcel.id, sensedParcel);
         }
 
-        // Remove stale parcels that are not in the current sensing area even though we believed they existed before
-        const isInsideSensingArea = (parcel: Parcel): boolean => {
-            return Math.abs((this.me.position.x - parcel.position.x) + (this.me.position.y - parcel.position.y)) <= this.gameConfig.agent.observation_distance
-        }
+
+        // Remove stale parcels believed to exist in the current observing area, but that are no more present.
         this.parcels.forEach((believedParcel: Parcel) => {
-            if (isInsideSensingArea(believedParcel) && !sensedParcels.some((p) => p.id === believedParcel.id)) {
+            if (this._isInsideObservingArea(believedParcel.position) && !sensedParcels.some((p) => p.id === believedParcel.id)) {
                 this.parcels.delete(believedParcel.id);
             }
         })
+    }
+
+    private _isInsideObservingArea = (position: Position): boolean => {
+        return Math.abs(this.me.position.x - position.x) + Math.abs(this.me.position.y - position.y) <= this.gameConfig.agent.observation_distance
     }
     
     toString(rotateGridView: boolean = true): string {
         let beliefString = '*** BELIEF ***\n\n';
 
-        beliefString += this._gameConfigToString();
+        beliefString += this._meToString();
+        // beliefString += '\n=========\n';
+        // beliefString += this._gameConfigToString();
         beliefString += '\n=========\n';
         beliefString += this._gridToString(rotateGridView);
         beliefString += '\n=========\n';
@@ -115,6 +133,10 @@ class Belief {
         beliefString += this._agentsToString()
 
         return beliefString;
+    }
+
+    private _meToString(): string {
+        return `Me: Agent ${this.me.id}: Position (${this.me.position.x}, ${this.me.position.y}), Score: ${this.me.score}, Penalty: ${this.me.penalty}\n`;
     }
 
     private _gameConfigToString(): string {
@@ -171,9 +193,21 @@ class Belief {
             gridString += `${y.toString().padStart(2, '0')} `;
             for (let x = 0; x < width; x++) {
                 const parcelHere = rewardByPosition.get(`${x},${y}`) ?? 0;
-                const tileInfo = parcelHere ? `${parcelHere}`.padStart(2, ' ') : '  ';
+                let tileInfo = parcelHere ? `${parcelHere}`.padStart(2, ' ') : '  ';
 
-                gridString += getTile(x, y).toString(tileInfo);
+                if (this.me.position.x === x && this.me.position.y === y) {
+                    tileInfo = "🏎"; // Highlight the agent's position
+                }
+
+                this.agents.forEach((agent) => {
+                    if (agent.position.x === x && agent.position.y === y) {
+                        tileInfo = "🤖"; // Highlight other agents' positions
+                    }
+                })
+
+                const tile = getTile(x, y);
+                const heatColor = this._observedHeatColor(tile.lastTimeObserved);
+                gridString += tile.toString(tileInfo, heatColor);
             }
             gridString += '\n';
         }
@@ -183,6 +217,23 @@ class Belief {
             gridString += ` ${x.toString().padStart(2, '0')} `;
         }
         return gridString;
+    }
+
+    // Cold (never/long unobserved) -> hot (just observed) gradient endpoints
+
+    private _observedHeatColor(lastTimeObserved: number): {r: number, g: number, b: number} | string {
+        const HEAT_HALF_LIFE_MS = this.gameConfig.clock * 30;
+        const HEAT_COLD = { r: 20, g: 20, b: 60 };
+        const HEAT_HOT = { r: 255, g: 60, b: 60 };
+
+        const age = Date.now() - lastTimeObserved;
+        const t = Math.pow(0.5, age / HEAT_HALF_LIFE_MS);
+
+        const r = Math.round(HEAT_COLD.r + (HEAT_HOT.r - HEAT_COLD.r) * t);
+        const g = Math.round(HEAT_COLD.g + (HEAT_HOT.g - HEAT_COLD.g) * t);
+        const b = Math.round(HEAT_COLD.b + (HEAT_HOT.b - HEAT_COLD.b) * t);
+
+        return { r, g, b };
     }
 }
 

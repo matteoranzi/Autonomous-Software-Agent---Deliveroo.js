@@ -45,10 +45,12 @@ async function initialize() {
 
     djsClient.onSensing((sensing) => {
         belief.updateBeliefs(adaptSensingPayload(sensing));
+        // console.log("sensing...")
     })
 
     djsClient.onYou((me) => {
         belief.updateMe(adaptSelfSensingPayload(me));
+        // console.log("me updated...")
     })
 
 
@@ -59,7 +61,7 @@ async function initialize() {
         readline.cursorTo(process.stdout, 0, 0);
         readline.clearScreenDown(process.stdout);
         process.stdout.write(belief.toString());
-    }, 1000);
+    }, belief.gameConfig.clock);
 }
 
 function waitForConfig() {

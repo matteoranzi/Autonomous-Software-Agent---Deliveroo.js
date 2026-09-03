@@ -45,6 +45,7 @@ class Tile {
     private readonly _isCrateAllowed: boolean = false;
     private readonly _direction: TileDirection = TileDirection.NONE;
 
+    lastTimeObserved: number = 0; // Timestamp of the last time this tile was seen by the agent
 
     constructor(tileType: TileType) {
         switch (tileType) {
@@ -109,8 +110,16 @@ class Tile {
         return this._isWalkable;
     }
 
-    toString(item: string = "  "): string {
+    toString(item: string = "  ", heatMap?: {r: number, g: number, b: number}): string {
         const reset = '\x1b[0m';
+
+        if (heatMap) {
+            if (this.isWalkable) {
+                return `\x1b[48;2;${heatMap.r};${heatMap.g};${heatMap.b}m ${item}${reset}|`; // heatmap color (24-bit truecolor)
+            } else {
+                return `\x1b[40m   ${reset}|`; // black bg
+            }
+        }
 
         if (this._isParcelDelivery) {
             return `\x1b[41m ${item}${reset}|`; // red bg
