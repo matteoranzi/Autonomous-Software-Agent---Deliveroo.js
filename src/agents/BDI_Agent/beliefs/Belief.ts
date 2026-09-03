@@ -88,18 +88,18 @@ class Belief {
     }
 
     updateParcels(sensedParcels: Parcel[]): void {
-        // TODO: Update parcel information of the belief based on newParcels
-        //  - If we believe a parcel exists but is not in the current sensing area, delete it.
-
-        // TODO: consider the parcels information that are shared with other agents
-
         for (const sensedParcel of sensedParcels) {
             this.parcels.set(sensedParcel.id, sensedParcel);
         }
 
         // Remove stale parcels that are not in the current sensing area even though we believed they existed before
-        this.parcels.forEach((parcel: Parcel) => {
-            //FIXME: Current position of the agent is needed.
+        const isInsideSensingArea = (parcel: Parcel): boolean => {
+            return Math.abs((this.me.position.x - parcel.position.x) + (this.me.position.y - parcel.position.y)) <= this.gameConfig.agent.observation_distance
+        }
+        this.parcels.forEach((believedParcel: Parcel) => {
+            if (isInsideSensingArea(believedParcel) && !sensedParcels.some((p) => p.id === believedParcel.id)) {
+                this.parcels.delete(believedParcel.id);
+            }
         })
     }
     
