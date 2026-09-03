@@ -41,16 +41,21 @@ class Belief {
     parcels: Map<string, Parcel>;
     agents: Map<string, Agent>;
 
+    me: Agent
+
     parcelsDecayTimer: ReturnType<typeof setInterval> | null = null;
 
-    constructor(gameConfig: GameConfig) {
+    constructor(gameConfig: GameConfig, gameMap: GameMap, me: Agent) {
         this.gameConfig = gameConfig;
+        this.me = me;
+        this._setGameMap(gameMap)
 
         this.parcels = new Map<string, Parcel>();
         this.agents = new Map<string, Agent>();
+
     }
 
-    setGameMap(gameMap: GameMap): void {
+    private _setGameMap(gameMap: GameMap): void {
         this.map = gameMap;
 
         // Decay the reward of the parcels every parcelsDecayInterval ms
@@ -65,6 +70,10 @@ class Belief {
                 }
             }, this.gameConfig.parcel.decay_interval);
         }
+    }
+
+    updateMe(me: Agent): void {
+        this.me = me;
     }
 
     updateBeliefs(dynamicBelief: DynamicBelief): void {
@@ -87,6 +96,11 @@ class Belief {
         for (const sensedParcel of sensedParcels) {
             this.parcels.set(sensedParcel.id, sensedParcel);
         }
+
+        // Remove stale parcels that are not in the current sensing area even though we believed they existed before
+        this.parcels.forEach((parcel: Parcel) => {
+            //FIXME: Current position of the agent is needed.
+        })
     }
     
     toString(rotateGridView: boolean = true): string {
@@ -145,15 +159,19 @@ class Belief {
             ? Array.from({ length: height }, (_, i) => height - 1 - i)
             : Array.from({ length: height }, (_, i) => i);
 
+        // Total reward of parcels at each position, indexed as "x,y" (for visualization purposes)
+        const rewardByPosition = new Map<string, number>();
+        this.parcels.forEach((parcel) => {
+            const key = `${parcel.position.x},${parcel.position.y}`;
+            rewardByPosition.set(key, (rewardByPosition.get(key) ?? 0) + parcel.reward);
+        });
+
         let gridString = 'Grid:\n';
         for (const y of rowIndices) {
             gridString += `${y.toString().padStart(2, '0')} `;
             for (let x = 0; x < width; x++) {
-                let tileInfo = '  ';
-
-                // Check if there are parcels at the current tile and get their total reward (for visualization purposes)
-                const parcelHere = [...this.parcels.values()].map((parcel) => parcel.position.x === x && parcel.position.y === y ? parcel.reward : 0).reduce((sum, reward) => sum + reward, 0);
-                tileInfo = parcelHere ? `${parcelHere}`.padStart(2, ' ') : '  ';
+                const parcelHere = rewardByPosition.get(`${x},${y}`) ?? 0;
+                const tileInfo = parcelHere ? `${parcelHere}`.padStart(2, ' ') : '  ';
 
                 gridString += getTile(x, y).toString(tileInfo);
             }
