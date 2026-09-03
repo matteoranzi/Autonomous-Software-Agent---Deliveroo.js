@@ -208,7 +208,7 @@ export class BenchmarkAgent {
             await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        await this.#socket.emitShout(`Help! Blocked trying to move ${direction}`);
+       // await this.#socket.emitShout(`Help! Blocked trying to move ${direction}`);
         console.error(`Move ${direction} failed after ${maxAttempts} attempts. Giving up.`);
         return null;
     }
@@ -227,9 +227,11 @@ export class BenchmarkAgent {
 
         // XXX: only targets in the same SCC are currently considered reachable.
         // TODO implement verification if it make sense to change SCC (for example in destination scc there are more spawning AND delivery tiles)
-        const eligibleTiles = this.#deliveryTiles.filter(
-            (tile) => this.#sccMap[startTile.x][startTile.y] === this.#sccMap[tile.x][tile.y]
-        );
+
+        //FIXME sometimes goes out of bound
+        // const eligibleTiles = this.#deliveryTiles.filter(
+        //     (tile) => this.#sccMap[startTile.x][startTile.y] === this.#sccMap[tile.x][tile.y]
+        // );
 
         const paths = await Promise.all(
             eligibleTiles.map((tile) =>

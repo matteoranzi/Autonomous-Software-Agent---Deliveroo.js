@@ -1,32 +1,32 @@
 {
-  "name": "deliveroo_404_strategy_not_found",
+  "name": "autonomous_software_agent-deliveroo.js",
   "version": "1.0",
   "description": "Project for Autonomous Software Agents @unitn 2025-26",
-  "type": "module",
-  "main": "index.js",
-  "module": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc && tsc-alias --resolve-full-paths && copyfiles -u 1 \"src/**/*.pddl\" dist",
+    "run_compiled": "node dist/main.js",
+    "main": "tsx src/main.ts",
+    "dev:main": "tsx watch src/main.ts"
   },
-  "author": "Luca Hardonk, Matteo Ranzi",
-  "license": "ISC",
-  "imports": {
-    "#@unitn-asa/deliveroo-js-sdk/*": "./node_modules/@unitn-asa/deliveroo-js-sdk/*",
-    "#types/*.js": "./src/types/*.js",
-    "#MultiAgentSystem/*.js": "./src/MultiAgentSystem/*.js"
-  },
-  "devDependencies": {
-  },
+  "author": "Matteo Ranzi, Luca Hardonk",
+  "license": "MIT License",
+  "type": "module",
   "dependencies": {
-    "@unitn-asa/deliveroo-js-client": "latest",
-    "@unitn-asa/deliveroo-js-sdk": "latest",
-    "@unitn-asa/pddl-client": "^1.7.5",
+    "@matteoranzi/pddl-client": "^1.0.0",
+    "@unitn-asa/deliveroo-js-client": "2.0.3",
+    "@matteoranzi/deliveroo-js-sdk": "1.3.11",
     "args-parser": "^1.3.0",
     "node-fetch": "^3.3.0",
     "socket.io-client": "^4.6.0",
+    "@types/node": "latest",
     "dotenv": "latest",
 
     "@datastructures-js/priority-queue": "latest"
+  },
+  "devDependencies": {
+    "copyfiles": "^2.4.1",
+    "tsc-alias": "latest",
+    "tsx": "latest",
+    "typescript": "^5.9.3"
   }
 }

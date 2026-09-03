@@ -209,7 +209,7 @@ export class BT_Agent {
     }
 
     // ── Utils ─────────────────────────────────────────────────────────────────
-    async #resilientMove(direction, maxAttempts = 3) {
+    async #resilientMove(direction, maxAttempts = 2) {
         const move = (direction) => new Promise((resolve) => this.#socket.emit("move", direction, resolve));
 
         for (let i = 0; i < maxAttempts; ++i) {
@@ -242,12 +242,12 @@ export class BT_Agent {
         // XXX: only targets in the same SCC are currently considered reachable.
         // TODO implement verification if it make sense to change SCC (for example in destination scc there are more spawning AND delivery tiles)
         const eligibleTiles = targetTiles.filter(
-            (tile) => this.#sccMap[startTile.x][startTile.y] === this.#sccMap[tile.x][tile.y]
+            (tile) => true//this.#sccMap[startTile.x][startTile.y] === this.#sccMap[tile.x][tile.y]
         );
 
         const paths = await Promise.all(
             eligibleTiles.map((tile) =>
-                Promise.resolve(this.#pathFinder.aStar(this.#worldMap, startTile, { x: tile.x, y: tile.y }))
+                Promise.resolve(this.#pathFinder.aStar(this.#worldMap, startTile, { x: tile.x, y: tile.y }, this.#sensedAgents))
             )
         );
 
