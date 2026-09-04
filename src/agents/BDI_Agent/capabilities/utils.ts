@@ -1,5 +1,6 @@
-import {GameMap, Position} from "@/agents/BDI_Agent/beliefs/Belief";
+import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {TileDirection} from "@/agents/BDI_Agent/beliefs/primitives/Tile";
+import {MoveDirection} from "@/agents/BDI_Agent/planning/pathfinding/IPathFinder";
 
 /**
  * Calculates the Manhattan distance between two points.
@@ -7,7 +8,7 @@ import {TileDirection} from "@/agents/BDI_Agent/beliefs/primitives/Tile";
  * @param pointB - The second point.
  * @returns The Manhattan distance between the two points.
  */
-function manhattanDistance(pointA: { x: number; y: number }, pointB: { x: number; y: number }): number {
+function manhattanDistance(pointA: Position, pointB: Position): number {
     return Math.abs(pointA.x - pointB.x) + Math.abs(pointA.y - pointB.y);
 }
 
@@ -17,32 +18,53 @@ function positionKey(position: Position): string {
     return `${position.x},${position.y}`;
 }
 
-function getNeighbors(map: GameMap, tile: Position, occupiedTiles: Set<string> = new Set()): Position[] {
+/**
+ * Compares two positions by value (x and y), instead of by object reference.
+ */
+function positionsEqual(pointA: Position, pointB: Position): boolean {
+    return pointA.x === pointB.x && pointA.y === pointB.y;
+}
+
+/**
+ * Determines the cardinal direction of travel from currentTile to nextTile.
+ * Returns null if the two tiles aren't exactly one cardinal step apart.
+ */
+function whichMoveDirection(currentTile: Position, nextTile: Position, reverse = false): MoveDirection | null {
+    if (reverse) {
+        [currentTile, nextTile] = [nextTile, currentTile];
+    }
+
+    if (currentTile.x === nextTile.x && currentTile.y < nextTile.y) return MoveDirection.UP
+    if (currentTile.x === nextTile.x && currentTile.y > nextTile.y) return MoveDirection.DOWN;
+    if (currentTile.x < nextTile.x && currentTile.y === nextTile.y) return MoveDirection.RIGHT;
+    if (currentTile.x > nextTile.x && currentTile.y === nextTile.y) return MoveDirection.LEFT;
+
+    return null;
+}
+
+
+function getNeighbors(belief: Belief, tile: Position): Position[] {
     const neighbors: Position[] = [];
 
     for (let dx = -1; dx <= 1; dx++) {
         for (let dy = -1; dy <= 1; dy++) {
             if (dx === 0 && dy === 0 || Math.abs(dx) + Math.abs(dy) === 2) continue; // skip self and diagonals
 
-            const neighborX = tile.x + dx;
-            const neighborY = tile.y + dy;
+            const neighborPosition: Position = {x: tile.x + dx, y: tile.y + dy};
 
-            if (neighborX < 0 || neighborX >= map.width || neighborY < 0 || neighborY >= map.height) continue;
+            // Covers bounds, terrain walkability, and current occupancy by a rival agent or a crate.
+            if (!belief.isPositionCurrentlyWalkable(neighborPosition)) continue;
 
-            const neighborTile = map.grid[neighborX][neighborY];
-
-            if (!neighborTile.isWalkable) continue;
+            const neighborTile = belief.map.grid[neighborPosition.x][neighborPosition.y];
             if (neighborTile.direction === TileDirection.UP    && dy === -1) continue; // current tile is above a one-way-up cell
             if (neighborTile.direction === TileDirection.RIGHT && dx === -1) continue; // current tile is right of a one-way-right cell
             if (neighborTile.direction === TileDirection.DOWN  && dy ===  1) continue; // current tile is below a one-way-down cell
             if (neighborTile.direction === TileDirection.LEFT  && dx ===  1) continue; // current tile is left of a one-way-left cell
 
-            if (occupiedTiles.has(positionKey({x: neighborX, y: neighborY}))) continue; // currently blocked by a rival agent or a crate
-
-            neighbors.push({x: neighborX, y: neighborY});
+            neighbors.push(neighborPosition);
         }
     }
 
     return neighbors;
 }
-export { manhattanDistance, getNeighbors, positionKey};
+export { manhattanDistance, getNeighbors, positionKey, positionsEqual, whichMoveDirection};

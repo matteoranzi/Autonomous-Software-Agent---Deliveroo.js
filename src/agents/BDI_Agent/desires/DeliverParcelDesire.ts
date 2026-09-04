@@ -1,0 +1,40 @@
+import {Goal, IDesire, IDesireEvaluation} from "./IDesire";
+import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
+
+class DeliverParcelDesire implements IDesire {
+    readonly name: string = "DeliverParcelDesire";
+
+    belief: Belief;
+    goal: Goal;
+
+    constructor(belief: Belief, deliveryTilePosition: Position) {
+        this.belief = belief;
+        this.goal = {valid: true, position: deliveryTilePosition};
+    }
+
+    estimateValue(): number {
+        throw new Error("DeliverParcelDesire.estimateValue is not implemented yet");
+    }
+
+    evaluateValue(): Promise<IDesireEvaluation> {
+        throw new Error("DeliverParcelDesire.evaluateValue is not implemented yet");
+    }
+
+    isValid(): boolean {
+        if (!this.goal.valid) {
+            return false;
+        }
+
+        // FIXME: what if the position in only momentarily unwalkable? we shouldn't immediately discard the desire,
+        //  but rather wait for a few ticks to see if it becomes walkable again.
+        //  This is especially important in a multi-agent environment where other agents may temporarily block the path.
+        if (this.belief.isPositionCurrentlyWalkable(this.goal.position)) {
+            return true;
+        }
+
+        this.goal = {valid: false};
+        return false;
+    }
+
+
+}

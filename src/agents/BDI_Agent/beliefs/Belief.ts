@@ -3,11 +3,12 @@ import {Parcel} from "@/agents/BDI_Agent/beliefs/primitives/Parcel"
 import {Agent} from "@/agents/BDI_Agent/beliefs/primitives/Agent"
 import {Crate} from "@/agents/BDI_Agent/beliefs/primitives/Crate"
 import {TypedBeliefEmitter} from "@/agents/BDI_Agent/beliefs/events";
+import {positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
 
 type GameMap = { width: number, height: number, grid: Tile[][] };
 type Position = { x: number, y: number };
 
-type DynamicBelief = { agents: Agent[]; parcels: Parcel[], crates: Crate[]};
+type DynamicBelief = { agents: Agent[]; parcels: Parcel[], crates: Crate[] };
 
 type PlayerConfig = {
     movement_duration: number,
@@ -30,6 +31,7 @@ type GameConfig = {
     agent: PlayerConfig;
     parcel: ParcelsConfig;
 }
+
 
 
 class Belief {
@@ -72,10 +74,10 @@ class Belief {
         this.map.grid.forEach((column, x) => {
             column.forEach((tile, y) => {
                 if (tile.isParcelSpawner) {
-                    this.parcelSpawnerTiles.push({ x, y });
+                    this.parcelSpawnerTiles.push({x, y});
                 }
                 if (tile.isParcelDelivery) {
-                    this.parcelDeliveryTiles.push({ x, y });
+                    this.parcelDeliveryTiles.push({x, y});
                 }
             });
         });
@@ -117,7 +119,7 @@ class Belief {
         this.map.grid.forEach((column, x) => {
             column.forEach((tile, y) => {
                 if (tile.isCrateSpawner) {
-                    this.crates.set(this._seedCrateKey({ x, y }), new Crate(null, { x, y }));
+                    this.crates.set(this._seedCrateKey({x, y}), new Crate(null, {x, y}));
                 }
             });
         });
@@ -134,7 +136,7 @@ class Belief {
     private _updateLastObservedTiles(): void {
         this.map.grid.forEach((column, x) => {
             column.forEach((tile, y) => {
-                if (this._isInsideObservingArea({ x, y })) {
+                if (this._isInsideObservingArea({x, y})) {
                     tile.lastTimeObserved = Date.now();
                 }
             });
@@ -160,7 +162,7 @@ class Belief {
     }
 
     updateBeliefs(dynamicBelief: DynamicBelief): void {
-        if(this.updateParcels(dynamicBelief.parcels)) {
+        if (this.updateParcels(dynamicBelief.parcels)) {
             this._emitRelevantChanges4Desires();
         }
 
@@ -196,7 +198,7 @@ class Belief {
         this.crates.forEach((believedCrate: Crate, key: string) => {
             if (believedCrate.id === null
                 && this._isInsideObservingArea(believedCrate.position)
-                && !sensedCrates.some((c) => c.position.x === believedCrate.position.x && c.position.y === believedCrate.position.y)) {
+                && !sensedCrates.some((c) => positionsEqual(c.position, believedCrate.position))) {
                 this.crates.delete(key);
             }
         })
@@ -209,7 +211,7 @@ class Belief {
         // - A parcel is taken by another agent (carriedBy changes from null to an agent id)
         // - A parcel is dropped by another agent (carriedBy changes from an agent id to null)
         let changed = false;
-        
+
         for (const sensedParcel of sensedParcels) {
             let parcel = this.parcels.get(sensedParcel.id);
             if (!parcel || parcel.carriedBy !== sensedParcel.carriedBy) {
@@ -227,14 +229,36 @@ class Belief {
                 this.parcels.delete(believedParcel.id);
             }
         })
-        
+
         return changed;
+    }
+
+    isPositionCurrentlyWalkable(position: Position): boolean {
+        // A tile is blocked if it is outside the map, if the terrain itself isn't walkable,
+        // or if it is currently occupied by a crate or another agent.
+        if (position.x < 0 || position.x >= this.map.width || position.y < 0 || position.y >= this.map.height) {
+            return false;
+        }
+
+        if (!this.map.grid[position.x][position.y].isWalkable) {
+            return false;
+        }
+
+        if ([...this.agents.values()].some((agent) => agent.id !== this.me.id && positionsEqual(agent.position, position))) {
+            return false;
+        }
+
+        if ([...this.crates.values()].some((crate) => positionsEqual(crate.position, position))) {
+            return false;
+        }
+
+        return true;
     }
 
     private _isInsideObservingArea = (position: Position): boolean => {
         return Math.abs(this.me.position.x - position.x) + Math.abs(this.me.position.y - position.y) <= this.gameConfig.agent.observation_distance
     }
-    
+
     toString(rotateGridView: boolean = true, showHeatMap: boolean = false): string {
         let beliefString = '*** BELIEF ***\n\n';
 
@@ -256,7 +280,7 @@ class Belief {
     }
 
     private _gameConfigToString(): string {
-        const { map_name, clock, max_players, agent, parcel } = this.gameConfig;
+        const {map_name, clock, max_players, agent, parcel} = this.gameConfig;
 
         let configString = 'Game Config:\n';
         configString += `  - Map: ${map_name}, Clock: ${clock}ms, Max players: ${max_players}\n`;
@@ -292,11 +316,11 @@ class Belief {
     }
 
     private _gridToString(rotateGridView: boolean = true, showHeatMap: boolean = false): string {
-        const { width, height, grid } = this.map;
+        const {width, height, grid} = this.map;
         const getTile = (x: number, y: number): Tile => rotateGridView ? grid[x][y] : grid[y][x];
         const rowIndices = rotateGridView
-            ? Array.from({ length: height }, (_, i) => height - 1 - i)
-            : Array.from({ length: height }, (_, i) => i);
+            ? Array.from({length: height}, (_, i) => height - 1 - i)
+            : Array.from({length: height}, (_, i) => i);
 
         // Total reward of parcels at each position, indexed as "x,y" (for visualization purposes)
         const rewardByPosition = new Map<string, number>();
@@ -312,18 +336,18 @@ class Belief {
                 const parcelHere = rewardByPosition.get(`${x},${y}`) ?? 0;
                 let tileInfo = parcelHere ? `${parcelHere}`.padStart(2, ' ') : '  ';
 
-                if (this.me.position.x === x && this.me.position.y === y) {
+                if (positionsEqual(this.me.position, {x, y})) {
                     tileInfo = "🏎"; // Highlight the agent's position
                 }
 
                 this.agents.forEach((agent) => {
-                    if (agent.position.x === x && agent.position.y === y) {
+                    if (positionsEqual(agent.position, {x, y})) {
                         tileInfo = "🐌"; // Highlight other agents' positions
                     }
                 })
 
                 this.crates.forEach((crate) => {
-                    if (crate.position.x === x && crate.position.y === y) {
+                    if (positionsEqual(crate.position, {x, y})) {
                         if (crate.id === null) {
                             tileInfo = "⚙️"; // Highlight unconfirmed crates' positions
                         } else {
@@ -349,11 +373,11 @@ class Belief {
         return gridString;
     }
 
-    private _observedHeatColor(lastTimeObserved: number): {r: number, g: number, b: number} {
+    private _observedHeatColor(lastTimeObserved: number): { r: number, g: number, b: number } {
         // Cold (never/long unobserved) -> hot (just observed) gradient endpoints
         const HEAT_HALF_LIFE_MS = this.gameConfig.clock * 30;
-        const HEAT_COLD = { r: 20, g: 20, b: 60 };
-        const HEAT_HOT = { r: 255, g: 60, b: 60 };
+        const HEAT_COLD = {r: 20, g: 20, b: 60};
+        const HEAT_HOT = {r: 255, g: 60, b: 60};
 
         const age = Date.now() - lastTimeObserved;
         const t = Math.pow(0.5, age / HEAT_HALF_LIFE_MS);
@@ -362,7 +386,7 @@ class Belief {
         const g = Math.round(HEAT_COLD.g + (HEAT_HOT.g - HEAT_COLD.g) * t);
         const b = Math.round(HEAT_COLD.b + (HEAT_HOT.b - HEAT_COLD.b) * t);
 
-        return { r, g, b };
+        return {r, g, b};
     }
 
     // ============================================================================================
@@ -371,6 +395,7 @@ class Belief {
     private _emitRelevantChanges4Desires(): void {
         this._beliefEvents.emit('relevantChanges4Desires');
     }
+
     // Fires whenever a belief change could affect the current set of desires (e.g. a parcel
     // appearing or disappearing), so listeners know to regenerate their desire list.
     onRelevantChangesForDesires(callback: () => void): void {

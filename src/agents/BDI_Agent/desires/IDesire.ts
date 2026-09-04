@@ -1,8 +1,12 @@
-import {Position} from "@/agents/BDI_Agent/beliefs/Belief";
+import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
+
+type Goal = {valid: true, position: Position} | {valid: false};
 
 interface IDesire {
     readonly name: string;
-    readonly goal: Position; // Where the Agent intends to head based on the info he had when he formed this desire
+
+    belief: Belief;
+    goal: Goal; // Where the Agent intends to head based on the info he had when he formed this desire
 
     // Cheap heuristic score for the coarse filter pass
     estimateValue(): number;
@@ -23,4 +27,4 @@ interface IDesireEvaluation {
     expectedReward: number;
 }
 
-export {IDesire, IDesireEvaluation}
+export {IDesire, IDesireEvaluation, Goal}

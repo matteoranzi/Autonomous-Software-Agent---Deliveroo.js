@@ -13,7 +13,10 @@ class DesiresGenerator {
 
     generate(): DesiresGenerator{
         for (const parcel of this.belief.parcels.values()) {
-            this.desires.push(new PickupParcelDesire(this.belief, parcel.id));
+            let desire = new PickupParcelDesire(this.belief, parcel.id);
+            if (desire.isValid()) {
+                this.desires.push(desire);
+            }
         }
         return this;
     }

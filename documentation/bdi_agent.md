@@ -39,3 +39,50 @@ middle ground, and maps cleanly onto isValid() already existing as a cheap per-t
 
 decoupling "desire list membership changed"   
 (event-driven) from "which intention am I committing to" (timer-driven, so decay-based reprioritization gets picked up even without a new event)
+
+---
+
+# Desires
+
+* PickupParcel
+  * desire: Every known parcel that is not carried by an agent.
+  * score: reward, distance, (crowding), OTHER AGENTS TARGETING IT
+* DeliverParcel
+  * precondition: agent is carrying (at least) a parcel
+  * desire: Every known delivery point that is not currently occupied by another agent.
+  * score: distance, (crowding)
+  * **note: DeliverParcel desire MUST have a fallback system if selected delivery tile is no longer valid (i.e, another agent is occupying it).** Instead of discarding the Delivery desire, the agent will find another valid Delivery desire.
+* Explore:
+  * precondition: ~~agent is not carrying a parcel~~
+  * desire: explore any unobserved parcel spawning tile
+  * score: distance, (crowding), lastTimeObserved (favor tiles that haven't been seen in a while)
+  * **note: a strategic explore would be to position and wait until a parcel spawns.**
+
+Once all the valid desires are generated and filtered, a **STATE GRAPH IS BUILT** over which **Monte Carlo Tree Search** (MCTS) will run.
+The state graph is built by simulating all valid move sequences the agent can take from its current position
+> The sequence is represented in a higher level calculated via the score (heuristic!!!), not individual moving actions.
+
+> HOW TO CREATE STATE SPACE GRAPH WITH Explore DESIRE? Should I identify some hotspots in the map that let, collectively, observe all the spawning tiles?
+> Possible strategy:
+> - From each spawning tile, valid (parcel spawning tile) destinations are the one not observed by the agent.
+> - BUT SUCH LOGIC WOULD FAIL SINCE IT DOESN'T CONSIDER PREVIOUS OBSERVED TILES (the state space, BUILT STATICALLY, should work regardless the actual sequence of goals identified by the MCTS planner).
+> - * Same logic applies for delivery tiles: statically there should be a path from the delivery tile to the available parcels, but when building the state space graph we do not know which are the actual already delivered parcels, hence we need a dynamic layer that disconnects the relationships based on explored actions.
+
+Once the MCTS finds the best sequences of goals to pursue, the agent re-calculate each path to the next goal taking into consideration the last changes 
+(i.e, rival agents changing position). If a committed goal/intention is no longer valid, pass to the next one.\
+
+> If the agent navigation path is blocked by another agent, launch another PathFinding and if the new path is no longer than 
+> a certain percentage w.r.t. the remaining original path, then the agent will follow the new path. 
+> Otherwise, it will wait for a certain amount of time before path re-planning (**PERSISTENCE**).
+
+If the agent cannot find a path with A*, it will revert to PDDL planning to find a valid path.
+
+**IT MAY BE POSSIBLE THAT THE AGENT IS BLOCKED BY OTHER AGENTS AND CANNOT FIND A PATH TO THE GOAL. 
+IN THIS CASE, THE AGENT WILL WAIT UNTIL A CLEAR PATH IS FOUND.**
+
+
+## Graph maximum coverage
+This algorithm here is used to identify hotspots in the map that let, collectively, observe all the spawning tiles. The algorithm is based on a greedy approach to find the maximum coverage of the map with the minimum number of tiles.
+![Greedy Maximum Graph Coverage](imgs/greedy_maximum_graph_coverage.png)
+For each area, I should identify a set of tiles that are able to make such observation, in order to fallback on those if the main one is occupied.
+![Maximum Coverage Location Problem](imgs/maximum_coverage_location_problem.jpeg)

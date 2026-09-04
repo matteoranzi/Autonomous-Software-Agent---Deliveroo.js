@@ -1,25 +1,24 @@
-import {IDesire, IDesireEvaluation} from "./IDesire";
+import {Goal, IDesire, IDesireEvaluation} from "./IDesire";
 import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
-import {manhattanDistance} from "@/agents/BDI_Agent/capabilities/utils";
+import {manhattanDistance, positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
 
 class PickupParcelDesire implements IDesire {
-    readonly name: string;
-    readonly goal: Position;
+    readonly name: string = "PickupParcelDesire";
     readonly parcelId: string;
 
     belief: Belief;
+    goal: Goal;
 
     constructor(belief: Belief, parcelId: string) {
-        this.name = "PickupParcelDesire";
         this.parcelId = parcelId;
         this.belief = belief;
         let parcel = this.belief.parcels.get(this.parcelId);
 
-        this.goal = parcel ? parcel.position : {x: 0, y: 0};
+        this.goal = parcel ? {valid: true, position: parcel.position} : {valid: false};
     }
 
     estimateValue(): number {
-        return manhattanDistance(this.belief.me.position, this.goal);
+        throw new Error("PickupParcelDesire.estimateValue is not implemented yet");
     }
 
     evaluateValue(): Promise<IDesireEvaluation> {
@@ -27,15 +26,24 @@ class PickupParcelDesire implements IDesire {
     }
 
     isValid(): boolean {
+        if (!this.goal.valid) {
+            return false;
+        }
+
         let parcel = this.belief.parcels.get(this.parcelId);
 
         // Checks if the parcel still exists and is not being carried by another agent.
         if (parcel && !parcel.carriedBy) {
             // If the parcel is no longer in the same position as when the desire was formed, then the desire is no longer valid
             // and should invalidate that part of the intention (if it were actually being executed)
-            return (parcel.position.x === this.goal.x &&
-                parcel.position.y === this.goal.y)
+
+            if (positionsEqual(parcel.position, this.goal.position)) {
+                return true;
+            }
         }
+
+        this.goal = {valid: false};
+
         return false;
     }
 }

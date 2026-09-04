@@ -119,7 +119,11 @@ class BDI_Agent {
         bdi_agent_str += "\n\n*************************************************************\n\n";
         bdi_agent_str += "*** DESIRE ***\n\n";
         for (const desire of this.desiresGenerator.desires) {
-            bdi_agent_str += `  - ${desire.name} (goal: ${desire.goal.x},${desire.goal.y})\n`;
+            if (desire.goal.valid) {
+                bdi_agent_str += `  - ${desire.name} (goal: ${desire.goal.position.x},${desire.goal.position.y})\n`;
+            } else {
+                bdi_agent_str += `  - ${desire.name} (goal: [INVALID])\n`;
+            }
         }
         return bdi_agent_str;
     }
