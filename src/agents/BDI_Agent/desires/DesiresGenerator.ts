@@ -1,6 +1,7 @@
 import {Belief} from "@/agents/BDI_Agent/beliefs/Belief";
 import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
 import {PickupParcelDesire} from "@/agents/BDI_Agent/desires/PickupParcelDesire";
+import {DeliverParcelDesire} from "@/agents/BDI_Agent/desires/DeliverParcelDesire";
 
 class DesiresGenerator {
     belief: Belief;
@@ -13,11 +14,15 @@ class DesiresGenerator {
 
     generate(): DesiresGenerator{
         for (const parcel of this.belief.parcels.values()) {
-            let desire = new PickupParcelDesire(this.belief, parcel.id);
-            if (desire.isValid()) {
-                this.desires.push(desire);
+            this.desires.push( new PickupParcelDesire(this.belief, parcel.id));
+        }
+
+        if(DeliverParcelDesire.isApplicable(this.belief)) {
+            for (const deliveryTile of this.belief.parcelDeliveryTiles) {
+                this.desires.push( new DeliverParcelDesire(this.belief, deliveryTile));
             }
         }
+
         return this;
     }
 

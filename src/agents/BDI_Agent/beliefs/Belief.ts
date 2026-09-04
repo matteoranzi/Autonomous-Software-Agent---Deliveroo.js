@@ -255,6 +255,10 @@ class Belief {
         return true;
     }
 
+    isAgentCarryingParcels(agentId: string): boolean {
+        return ([...this.parcels.values()].some((parcel) => parcel.carriedBy === agentId));
+    }
+
     private _isInsideObservingArea = (position: Position): boolean => {
         return Math.abs(this.me.position.x - position.x) + Math.abs(this.me.position.y - position.y) <= this.gameConfig.agent.observation_distance
     }
