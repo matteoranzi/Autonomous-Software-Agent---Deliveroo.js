@@ -5,6 +5,7 @@ import {adaptSelfSensingPayload, adaptSensingPayload} from "@/io/adapters/sensin
 import {adaptConfigPayload} from "@/io/adapters/configAdapter";
 import {Agent} from "@/agents/BDI_Agent/beliefs/primitives/Agent";
 import {AppConfig} from "@/config";
+import {DesiresGenerator} from "@/agents/BDI_Agent/desires/DesiresGenerator";
 
 
 // TODO: exploration strategy: find a tile that maximizes the number of unknown tiles in the sensing radius, and move towards it. If there are multiple such tiles, choose the closest one. If there are no such tiles, choose a random tile that is not a wall and is not occupied by another agent.
@@ -12,19 +13,41 @@ import {AppConfig} from "@/config";
 class BDI_Agent {
     private readonly _djsClient: DjsClientSocket;
     private readonly _appConfig: AppConfig;
+
     private belief: Belief;
+    private readonly _ready: Promise<void>;
+
+    private desiresGenerator: DesiresGenerator;
 
     constructor(djsClient: DjsClientSocket, appConfig: AppConfig) {
         this._djsClient = djsClient;
         this._appConfig = appConfig;
 
-        this._initialize().catch((err) => {
+        this._ready = this._initializeBDI_Agent().catch((err) => {
             console.error(err);
             process.exit(1);
         });
     }
 
-    private async _initialize(): Promise<void> {
+    private async _initializeBDI_Agent(): Promise<void> {
+        await this._initializeBelief();
+        await this._initializeDesire();
+    }
+
+    waitUntilReady(): Promise<void> {
+        return this._ready;
+    }
+
+    private async _initializeDesire() {
+        this.desiresGenerator = new DesiresGenerator(this.belief);
+
+        this.belief.onRelevantChangesForDesires(() => {
+            this.desiresGenerator.desires = [];
+            this.desiresGenerator.generate().filter();
+        });
+    }
+
+    private async _initializeBelief(): Promise<void> {
         this._djsClient.onConnect(() => console.log('Connected: ' + this._djsClient.id));
         this._djsClient.onDisconnect(() => console.log('Disconnected: ' + this._djsClient.id));
 
@@ -81,7 +104,18 @@ class BDI_Agent {
     }
 
     toString() {
-        return this.belief.toString(true, this._appConfig.showHeatMapInUI);
+        let bdi_agent_str = "\n*************************************************************\n";
+        bdi_agent_str += "BDI_Agent: " + this.belief.me.id + "\n";
+        bdi_agent_str += "*************************************************************\n\n";
+
+        bdi_agent_str += this.belief.toString(true, this._appConfig.showHeatMapInUI);
+
+        bdi_agent_str += "\n\n*************************************************************\n\n";
+        bdi_agent_str += "*** DESIRE ***\n\n";
+        for (const desire of this.desiresGenerator.desires) {
+            bdi_agent_str += `  - ${desire.name} (goal: ${desire.goal.x},${desire.goal.y})\n`;
+        }
+        return bdi_agent_str;
     }
 }
 

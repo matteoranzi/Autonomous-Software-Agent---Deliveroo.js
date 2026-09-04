@@ -2,7 +2,6 @@ import {Tile} from "@/agents/BDI_Agent/beliefs/primitives/Tile"
 import {Parcel} from "@/agents/BDI_Agent/beliefs/primitives/Parcel"
 import {Agent} from "@/agents/BDI_Agent/beliefs/primitives/Agent"
 import {Crate} from "@/agents/BDI_Agent/beliefs/primitives/Crate"
-import EventEmitter from "node:events";
 import {TypedBeliefEmitter} from "@/agents/BDI_Agent/beliefs/events";
 
 type GameMap = { width: number, height: number, grid: Tile[][] };
@@ -49,7 +48,7 @@ class Belief {
     parcelsDecayTimer: ReturnType<typeof setInterval> | null = null;
     observationTimer: ReturnType<typeof setInterval> | null = null;
 
-    beliefEvents: TypedBeliefEmitter;
+    private readonly _beliefEvents: TypedBeliefEmitter;
 
     constructor(gameConfig: GameConfig, gameMap: GameMap, me: Agent) {
         this.gameConfig = gameConfig;
@@ -62,7 +61,7 @@ class Belief {
         this.parcelSpawnerTiles = new Array<Position>();
         this.parcelDeliveryTiles = new Array<Position>();
 
-        this.beliefEvents = new TypedBeliefEmitter();
+        this._beliefEvents = new TypedBeliefEmitter();
 
         this._setupGameMap(gameMap)
     }
@@ -84,12 +83,18 @@ class Belief {
         // Decay the reward of the parcels every parcelsDecayInterval ms
         if (this.gameConfig.parcel.decay_interval < Infinity) {
             this.parcelsDecayTimer = setInterval(() => {
+                let importantChange = false;
                 for (const parcel of this.parcels.values()) {
                     if (parcel.reward < 1) {
+                        importantChange = true;
                         this.parcels.delete(parcel.id);
                     } else {
                         parcel.reward--;
                     }
+                }
+
+                if (importantChange) {
+                    this._emitRelevantChanges4Desires();
                 }
             }, this.gameConfig.parcel.decay_interval);
         }
@@ -103,6 +108,8 @@ class Belief {
         }, this.gameConfig.clock);
 
         this._seedCratesFromMap();
+
+        this._emitRelevantChanges4Desires();
     }
 
     // Seed crates from the map's crate spawner tiles. These are unconfirmed guesses that will be promoted to confirmed crates once observed.
@@ -153,7 +160,10 @@ class Belief {
     }
 
     updateBeliefs(dynamicBelief: DynamicBelief): void {
-        this.updateParcels(dynamicBelief.parcels);
+        if(this.updateParcels(dynamicBelief.parcels)) {
+            this._emitRelevantChanges4Desires();
+        }
+
         this.updateAgents(dynamicBelief.agents);
         this.updateCrates(dynamicBelief.crates);
     }
@@ -189,8 +199,11 @@ class Belief {
         })
     }
 
-    updateParcels(sensedParcels: Parcel[]): void {
+    updateParcels(sensedParcels: Parcel[]): boolean {
+        let changed = false;
+        
         for (const sensedParcel of sensedParcels) {
+            changed ||= !this.parcels.has(sensedParcel.id);
             this.parcels.set(sensedParcel.id, sensedParcel);
         }
 
@@ -198,9 +211,12 @@ class Belief {
         // Remove stale parcels believed to exist in the current observing area, but that are no more present.
         this.parcels.forEach((believedParcel: Parcel) => {
             if (this._isInsideObservingArea(believedParcel.position) && !sensedParcels.some((p) => p.id === believedParcel.id)) {
+                changed = true;
                 this.parcels.delete(believedParcel.id);
             }
         })
+        
+        return changed;
     }
 
     private _isInsideObservingArea = (position: Position): boolean => {
@@ -212,10 +228,10 @@ class Belief {
 
         beliefString += this._meToString();
         beliefString += '\n=========\n';
-        beliefString += this._gameConfigToString();
-        beliefString += '\n=========\n';
-        beliefString += this._gridToString(rotateGridView, showHeatMap);
-        beliefString += '\n=========\n';
+        // beliefString += this._gameConfigToString();
+        // beliefString += '\n=========\n';
+        // beliefString += this._gridToString(rotateGridView, showHeatMap);
+        // beliefString += '\n=========\n';
         beliefString += this._parcelsToString();
         beliefString += '\n=========\n';
         beliefString += this._agentsToString()
@@ -241,7 +257,7 @@ class Belief {
     private _parcelsToString(): string {
         let parcelsString = 'Parcels:\n';
         let now = Date.now();
-        const sortedParcels = [...this.parcels.values()].sort((a, b) => b.lastTimeObserved - a.lastTimeObserved);
+        const sortedParcels = [...this.parcels.values()].sort((a, b) => b.reward - a.reward);
         for (const parcel of sortedParcels) {
             let timeSinceUpdate = ((now - parcel.lastTimeObserved) / 1000).toFixed(2);
             parcelsString += `  - Parcel ${parcel.id}: Position (${parcel.position.x}, ${parcel.position.y}), Carried by: ${parcel.carriedBy}, Reward: ${parcel.reward}, Time since update: ${timeSinceUpdate}s\n`;
@@ -321,9 +337,8 @@ class Belief {
         return gridString;
     }
 
-    // Cold (never/long unobserved) -> hot (just observed) gradient endpoints
-
     private _observedHeatColor(lastTimeObserved: number): {r: number, g: number, b: number} {
+        // Cold (never/long unobserved) -> hot (just observed) gradient endpoints
         const HEAT_HALF_LIFE_MS = this.gameConfig.clock * 30;
         const HEAT_COLD = { r: 20, g: 20, b: 60 };
         const HEAT_HOT = { r: 255, g: 60, b: 60 };
@@ -336,6 +351,19 @@ class Belief {
         const b = Math.round(HEAT_COLD.b + (HEAT_HOT.b - HEAT_COLD.b) * t);
 
         return { r, g, b };
+    }
+
+
+    // ============================================================================================
+    // Belief events
+    // ============================================================================================
+    private _emitRelevantChanges4Desires(): void {
+        this._beliefEvents.emit('relevantChanges4Desires');
+    }
+    // Fires whenever a belief change could affect the current set of desires (e.g. a parcel
+    // appearing or disappearing), so listeners know to regenerate their desire list.
+    onRelevantChangesForDesires(callback: () => void): void {
+        this._beliefEvents.on('relevantChanges4Desires', callback);
     }
 }
 

@@ -27,3 +27,5 @@ class DesiresGenerator {
         return this
     }
 }
+
+export {DesiresGenerator}

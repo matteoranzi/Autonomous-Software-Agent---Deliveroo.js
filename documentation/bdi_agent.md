@@ -35,4 +35,7 @@ pipeline (and only actually switch intentions) when there's no current intention
 (never reconsider) misses genuinely better opportunities or fails to notice a goal became impossible. Reconsidering only on completion/failure/invalidation — "single-minded" commitment — is the usual  
 middle ground, and maps cleanly onto isValid() already existing as a cheap per-tick check separate from the expensive evaluateValue() pass.
 
-Want me to scaffold _deliberate() in BDI_Agent along these lines once DesireGenerator exists?   
+---
+
+decoupling "desire list membership changed"   
+(event-driven) from "which intention am I committing to" (timer-driven, so decay-based reprioritization gets picked up even without a new event)

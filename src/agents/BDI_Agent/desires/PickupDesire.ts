@@ -33,7 +33,8 @@ class PickupDesire implements IDesire {
         if (parcel && !parcel.carriedBy) {
             // If the parcel is no longer in the same position as when the desire was formed, then the desire is no longer valid
             // and should invalidate that part of the intention (if it were actually being executed)
-            return (parcel.position === this.goal)
+            return (parcel.position.x === this.goal.x &&
+                parcel.position.y === this.goal.y)
         }
         return false;
     }

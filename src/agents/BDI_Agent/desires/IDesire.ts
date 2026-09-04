@@ -4,7 +4,6 @@ interface IDesire {
     readonly name: string;
     readonly goal: Position; // Where the Agent intends to head based on the info he had when he formed this desire
 
-
     // Cheap heuristic score for the coarse filter pass
     estimateValue(): number;
 

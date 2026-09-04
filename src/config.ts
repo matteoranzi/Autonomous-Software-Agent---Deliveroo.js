@@ -5,6 +5,7 @@ type AppConfig = {
 
     maxAgentHistoryPositions: number;
     showHeatMapInUI: boolean;
+    enableTerminalUI: boolean;
 }
 
 const config: AppConfig = {
@@ -12,6 +13,8 @@ const config: AppConfig = {
     token: process.env.TOKEN,
 
     maxAgentHistoryPositions: process.env.MAX_AGENT_HISTORY_POSITIONS ? parseInt(process.env.MAX_AGENT_HISTORY_POSITIONS) : 1,
+
+    enableTerminalUI: process.env.ENABLE_TERMINAL_UI === "true",
     showHeatMapInUI: process.env.SHOW_HEATMAP_IN_UI === "true",
 }
 

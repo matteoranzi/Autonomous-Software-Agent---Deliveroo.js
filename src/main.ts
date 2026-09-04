@@ -8,10 +8,22 @@ import {BDI_Agent} from "@/agents/BDI_Agent/BDI_Agent";
 
 main();
 
-function main() {
+async function main() {
     let bdi_agent: BDI_Agent = new BDI_Agent(DjsConnect(config.host, config.token), config);
+    await bdi_agent.waitUntilReady();
 
     // // *** TERMINAL UI ***
+    if(config.enableTerminalUI) {
+        setupTerminalUI(bdi_agent);
+    }
+}
+
+
+//====================================================
+//  Terminal UI
+//====================================================
+
+function setupTerminalUI(bdi_agent: BDI_Agent) {
     process.stdout.write('\x1b[?1049h\x1b[?25l');
     setInterval(() => {
         readline.cursorTo(process.stdout, 0, 0);
@@ -19,8 +31,6 @@ function main() {
         process.stdout.write(bdi_agent.toString());
     }, 50);
 }
-
-//====================================================
 
 function restoreTerminal(): void {
     process.stdout.write('\x1b[?25h\x1b[?1049l');
