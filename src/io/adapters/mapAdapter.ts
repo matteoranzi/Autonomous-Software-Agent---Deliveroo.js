@@ -21,9 +21,14 @@ function adaptTileType(type: IOTileType): TileType {
     return IO_TILE_TYPE_ADAPTER[type];
 }
 export function adaptMapPayload(_width: number, _height: number, _tiles: IOTile[]): GameMap {
+    const lastTile = _tiles.at(-1);
+    if (!lastTile) {
+        throw new Error('adaptMapPayload: received an empty tile list');
+    }
+
     // Compute the real map size (due to a server's bug, the received _width and _height may be wrong)
-    const width: number = _tiles.at(-1)["x"] + 1
-    const height: number = _tiles.at(-1)["y"] + 1
+    const width: number = lastTile.x + 1
+    const height: number = lastTile.y + 1
 
     const grid: Tile[][] = Array.from({ length: height }, () => Array(width).fill(null));
     _tiles.forEach((tile) => {

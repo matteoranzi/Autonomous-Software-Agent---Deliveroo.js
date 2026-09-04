@@ -183,6 +183,9 @@ class Belief {
         // Crates are never deleted, only moved: a confirmed crate always gets refreshed in
         // place (by real id) here, never removed for going unseen.
         for (const sensedCrate of sensedCrates) {
+            if (sensedCrate.id === null) {
+                continue; // sensed crates always carry a real id; a null one would mean malformed sensing data
+            }
             this.crates.delete(this._seedCrateKey(sensedCrate.position)); // promote a matching seed instead of duplicating it
             this.crates.set(sensedCrate.id, sensedCrate);
         }
@@ -361,7 +364,6 @@ class Belief {
 
         return { r, g, b };
     }
-
 
     // ============================================================================================
     // Belief events

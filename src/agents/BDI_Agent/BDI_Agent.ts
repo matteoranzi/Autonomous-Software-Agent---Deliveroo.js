@@ -6,7 +6,9 @@ import {adaptConfigPayload} from "@/io/adapters/configAdapter";
 import {Agent} from "@/agents/BDI_Agent/beliefs/primitives/Agent";
 import {AppConfig} from "@/config";
 import {DesiresGenerator} from "@/agents/BDI_Agent/desires/DesiresGenerator";
-
+import {IPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/IPathFinder";
+import {AStarPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/AStarPathFinder";
+import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
 
 // TODO: exploration strategy: find a tile that maximizes the number of unknown tiles in the sensing radius, and move towards it. If there are multiple such tiles, choose the closest one. If there are no such tiles, choose a random tile that is not a wall and is not occupied by another agent.
 //  such exploration strategy in some scenarios should be preferred over pickup (e.g. in an area where there are directional tiles and so the agent will "look-ahead" and see if in other areas is there anything interesting)
@@ -18,6 +20,8 @@ class BDI_Agent {
     private readonly _ready: Promise<void>;
 
     private desiresGenerator: DesiresGenerator;
+
+    private pathFinder: IPathFinder
 
     constructor(djsClient: DjsClientSocket, appConfig: AppConfig) {
         this._djsClient = djsClient;
@@ -32,6 +36,8 @@ class BDI_Agent {
     private async _initializeBDI_Agent(): Promise<void> {
         await this._initializeBelief();
         await this._initializeDesire();
+
+        this.pathFinder = new AStarPathFinder(this.belief);
     }
 
     waitUntilReady(): Promise<void> {

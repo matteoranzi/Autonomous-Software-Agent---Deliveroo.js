@@ -8,9 +8,17 @@ type AppConfig = {
     enableTerminalUI: boolean;
 }
 
+function requireEnv(name: string): string {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(`Missing required environment variable: ${name}`);
+    }
+    return value;
+}
+
 const config: AppConfig = {
-    host: process.env.HOST,
-    token: process.env.TOKEN,
+    host: requireEnv('HOST'),
+    token: requireEnv('TOKEN'),
 
     maxAgentHistoryPositions: process.env.MAX_AGENT_HISTORY_POSITIONS ? parseInt(process.env.MAX_AGENT_HISTORY_POSITIONS) : 1,
 

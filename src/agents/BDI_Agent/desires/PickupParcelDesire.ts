@@ -10,7 +10,7 @@ class PickupParcelDesire implements IDesire {
     belief: Belief;
 
     constructor(belief: Belief, parcelId: string) {
-        this.name = "PickupDesire";
+        this.name = "PickupParcelDesire";
         this.parcelId = parcelId;
         this.belief = belief;
         let parcel = this.belief.parcels.get(this.parcelId);
@@ -23,7 +23,7 @@ class PickupParcelDesire implements IDesire {
     }
 
     evaluateValue(): Promise<IDesireEvaluation> {
-        return Promise.resolve(undefined);
+        throw new Error("PickupParcelDesire.evaluateValue is not implemented yet");
     }
 
     isValid(): boolean {

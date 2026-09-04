@@ -6,7 +6,10 @@ import { DjsConnect } from "@matteoranzi/deliveroo-js-sdk/client";
 import {BDI_Agent} from "@/agents/BDI_Agent/BDI_Agent";
 
 
-main();
+
+main().then(r => console.log("Application started")).catch(err => {
+    console.error("Error starting the Application:", err);
+});
 
 async function main() {
     let bdi_agent: BDI_Agent = new BDI_Agent(DjsConnect(config.host, config.token), config);

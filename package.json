@@ -27,6 +27,7 @@
     "copyfiles": "^2.4.1",
     "tsc-alias": "latest",
     "tsx": "latest",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "datastructures-js": "latest"
   }
 }
