@@ -88,9 +88,8 @@ class Agent {
 
     // Absorb a freshly sensed snapshot of this same agent in place, preserving position
     // history instead of being replaced wholesale. If the new position is farther than
-    // maxJumpDistance (Manhattan) from the last known one, the trail is discontinuous -
-    // unobserved moves happened in between - so the history is reset instead of splicing
-    // in a jump.
+    // maxJumpDistance (Manhattan, default: 1) from the last known one, the trail is discontinuous (unobserved moves happened in between)
+    // so the history is reset instead of splicing in a jump.
     update(sensed: Agent, maxJumpDistance: number = 1): void {
         const manhattanDistance = Math.abs(this.position.x - sensed.position.x) + Math.abs(this.position.y - sensed.position.y);
         if (manhattanDistance > maxJumpDistance) {
