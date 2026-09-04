@@ -2,7 +2,7 @@ import {IDesire, IDesireEvaluation} from "./IDesire";
 import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {manhattanDistance} from "@/agents/BDI_Agent/capabilities/utils";
 
-class PickupDesire implements IDesire {
+class PickupParcelDesire implements IDesire {
     readonly name: string;
     readonly goal: Position;
     readonly parcelId: string;
@@ -40,4 +40,4 @@ class PickupDesire implements IDesire {
     }
 }
 
-export { PickupDesire };
+export { PickupParcelDesire };

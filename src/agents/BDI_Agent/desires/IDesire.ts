@@ -18,6 +18,9 @@ interface IDesire {
 interface IDesireEvaluation {
     utility: number;
     estimatedSteps: number;
+    risk: number;
+    urgency: number;
+    expectedReward: number;
 }
 
 export {IDesire, IDesireEvaluation}

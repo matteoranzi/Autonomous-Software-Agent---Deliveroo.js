@@ -200,10 +200,19 @@ class Belief {
     }
 
     updateParcels(sensedParcels: Parcel[]): boolean {
+        // Major changes to notify:
+        // - A new parcel appears (not in the belief yet)
+        // - A believed parcel disappears from the observed area
+        // - A parcel is taken by another agent (carriedBy changes from null to an agent id)
+        // - A parcel is dropped by another agent (carriedBy changes from an agent id to null)
         let changed = false;
         
         for (const sensedParcel of sensedParcels) {
-            changed ||= !this.parcels.has(sensedParcel.id);
+            let parcel = this.parcels.get(sensedParcel.id);
+            if (!parcel || parcel.carriedBy !== sensedParcel.carriedBy) {
+                changed = true;
+            }
+
             this.parcels.set(sensedParcel.id, sensedParcel);
         }
 

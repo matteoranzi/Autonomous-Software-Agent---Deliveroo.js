@@ -1,6 +1,6 @@
 import {Belief} from "@/agents/BDI_Agent/beliefs/Belief";
 import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
-import {PickupDesire} from "@/agents/BDI_Agent/desires/PickupDesire";
+import {PickupParcelDesire} from "@/agents/BDI_Agent/desires/PickupParcelDesire";
 
 class DesiresGenerator {
     belief: Belief;
@@ -13,7 +13,7 @@ class DesiresGenerator {
 
     generate(): DesiresGenerator{
         for (const parcel of this.belief.parcels.values()) {
-            this.desires.push(new PickupDesire(this.belief, parcel.id));
+            this.desires.push(new PickupParcelDesire(this.belief, parcel.id));
         }
         return this;
     }
