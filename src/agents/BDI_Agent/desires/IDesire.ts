@@ -1,4 +1,4 @@
-import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
+import {Position} from "@/agents/BDI_Agent/beliefs/Belief";
 
 interface IDesire {
     readonly name: string;
