@@ -1,5 +1,6 @@
 import {Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {CircularBuffer} from "@/agents/BDI_Agent/beliefs/primitives/CircularBuffer";
+import {manhattanDistance} from "@/agents/BDI_Agent/capabilities/utils";
 
 enum MovementDirection {
     UP = "UP",
@@ -91,8 +92,7 @@ class Agent {
     // maxJumpDistance (Manhattan, default: 1) from the last known one, the trail is discontinuous (unobserved moves happened in between)
     // so the history is reset instead of splicing in a jump.
     update(sensed: Agent, maxJumpDistance: number = 1): void {
-        const manhattanDistance = Math.abs(this.position.x - sensed.position.x) + Math.abs(this.position.y - sensed.position.y);
-        if (manhattanDistance > maxJumpDistance) {
+        if (manhattanDistance(sensed.position, this.position) > maxJumpDistance) {
             this._historyPositions.clear();
         }
 

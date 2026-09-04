@@ -2,6 +2,8 @@ import {Tile} from "@/agents/BDI_Agent/beliefs/primitives/Tile"
 import {Parcel} from "@/agents/BDI_Agent/beliefs/primitives/Parcel"
 import {Agent} from "@/agents/BDI_Agent/beliefs/primitives/Agent"
 import {Crate} from "@/agents/BDI_Agent/beliefs/primitives/Crate"
+import EventEmitter from "node:events";
+import {TypedBeliefEmitter} from "@/agents/BDI_Agent/beliefs/events";
 
 type GameMap = { width: number, height: number, grid: Tile[][] };
 type Position = { x: number, y: number };
@@ -40,9 +42,14 @@ class Belief {
     agents: Map<string, Agent>;
     crates: Map<string, Crate>;
 
+    // List of positions of the tiles that are parcel spawners and parcel delivery, for pathfinding purposes.
+    parcelSpawnerTiles: Position[];
+    parcelDeliveryTiles: Position[];
+
     parcelsDecayTimer: ReturnType<typeof setInterval> | null = null;
     observationTimer: ReturnType<typeof setInterval> | null = null;
 
+    beliefEvents: TypedBeliefEmitter;
 
     constructor(gameConfig: GameConfig, gameMap: GameMap, me: Agent) {
         this.gameConfig = gameConfig;
@@ -52,11 +59,27 @@ class Belief {
         this.agents = new Map<string, Agent>();
         this.crates = new Map<string, Crate>();
 
+        this.parcelSpawnerTiles = new Array<Position>();
+        this.parcelDeliveryTiles = new Array<Position>();
+
+        this.beliefEvents = new TypedBeliefEmitter();
+
         this._setupGameMap(gameMap)
     }
 
     private _setupGameMap(gameMap: GameMap): void {
         this.map = gameMap;
+
+        this.map.grid.forEach((column, x) => {
+            column.forEach((tile, y) => {
+                if (tile.isParcelSpawner) {
+                    this.parcelSpawnerTiles.push({ x, y });
+                }
+                if (tile.isParcelDelivery) {
+                    this.parcelDeliveryTiles.push({ x, y });
+                }
+            });
+        });
 
         // Decay the reward of the parcels every parcelsDecayInterval ms
         if (this.gameConfig.parcel.decay_interval < Infinity) {
