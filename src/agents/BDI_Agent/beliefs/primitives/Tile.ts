@@ -1,21 +1,3 @@
-// const TileType = {
-//     NON_WALKABLE: '0',
-//     PARCEL_SPAWNER: '1',
-//     PARCEL_DELIVERY: '2',
-//     WALKABLE: '3',
-//
-//     // Directional tiles: cannot be entered in the opposite direction of the arrow
-//     DIRECTIONAL: {
-//         UP: '↑',
-//         DOWN: '↓',
-//         LEFT: '←',
-//         RIGHT: '→',
-//     },
-//
-//     CRATE_SLIDE: '5',
-//     CRATE_SPAWNER: '5!',
-// } as const;
-
 enum TileType {
     WALL,
     PARCEL_SPAWNER,
@@ -42,6 +24,7 @@ class Tile {
     private readonly _isWalkable: boolean = false;
     private readonly _isParcelDelivery: boolean = false;
     private readonly _isParcelSpawner: boolean = false;
+    private readonly _isCrateSpawner: boolean = false;
     private readonly _isCrateAllowed: boolean = false;
     private readonly _direction: TileDirection = TileDirection.NONE;
 
@@ -70,6 +53,7 @@ class Tile {
             case TileType.CRATE_SPAWNER:
                 this._isWalkable = true;
                 this._isCrateAllowed = true;
+                this._isCrateSpawner = true;
                 break;
             case TileType.DIRECTIONAL_UP:
                 this._isWalkable = true;
@@ -102,6 +86,10 @@ class Tile {
         return this._isCrateAllowed;
     }
 
+    get isCrateSpawner(): boolean {
+        return this._isCrateSpawner;
+    }
+
     get direction(): TileDirection {
         return this._direction;
     }
@@ -113,41 +101,40 @@ class Tile {
     toString(item: string = "  ", heatMap?: {r: number, g: number, b: number}): string {
         const reset = '\x1b[0m';
 
-        if (heatMap) {
-            if (this.isWalkable) {
-                return `\x1b[48;2;${heatMap.r};${heatMap.g};${heatMap.b}m ${item}${reset}|`; // heatmap color (24-bit truecolor)
-            } else {
-                return `\x1b[40m   ${reset}|`; // black bg
-            }
+        if (!this.isWalkable) {
+            return `\x1b[40m   ${reset}|`; // black bg
         }
 
+        const { bg, edgeChar } = this._typeStyle();
+
+        // Tile's own character (e.g. a directional arrow) is always shown; only the
+        // background swaps from the type's default color to the heatmap color when given.
+        const background = heatMap ? `\x1b[48;2;${heatMap.r};${heatMap.g};${heatMap.b}m` : `\x1b[${bg}m`;
+        return `${background}${edgeChar}${item}${reset}|`;
+    }
+
+    private _typeStyle(): { bg: string; edgeChar: string } {
         if (this._isParcelDelivery) {
-            return `\x1b[41m ${item}${reset}|`; // red bg
+            return { bg: '41', edgeChar: ' ' }; // red bg
         }
         if (this._isParcelSpawner) {
-            return `\x1b[42m ${item}${reset}|`; // green bg
+            return { bg: '42', edgeChar: ' ' }; // green bg
         }
         if (this._isCrateAllowed) {
-            return `\x1b[43m ${item}${reset}|`; // yellow bg
+            return { bg: '43', edgeChar: ' ' }; // yellow bg
         }
-        if (this._direction) {
-            switch (this._direction) {
-                case TileDirection.UP:
-                    return `\x1b[44m↑${item}${reset}|`; // blue bg
-                case TileDirection.DOWN:
-                    return `\x1b[44m↓${item}${reset}|`; // blue bg
-                case TileDirection.LEFT:
-                    return `\x1b[44m←${item}${reset}|`; // blue bg
-                case TileDirection.RIGHT:
-                    return `\x1b[44m→${item}${reset}|`; // blue bg
-            }
+        switch (this._direction) {
+            case TileDirection.UP:
+                return { bg: '44', edgeChar: '↑' }; // blue bg
+            case TileDirection.DOWN:
+                return { bg: '44', edgeChar: '↓' }; // blue bg
+            case TileDirection.LEFT:
+                return { bg: '44', edgeChar: '←' }; // blue bg
+            case TileDirection.RIGHT:
+                return { bg: '44', edgeChar: '→' }; // blue bg
         }
 
-        if (this._isWalkable) {
-            return `\x1b[47m ${item}${reset}|`; // white bg
-        }
-
-        return `\x1b[40m   ${reset}|`; // black bg
+        return { bg: '47', edgeChar: ' ' }; // white bg (plain walkable tile; toString already excludes non-walkable)
     }
 }
 

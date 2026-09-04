@@ -5,8 +5,8 @@ class Parcel {
     position: Position;
     reward: number;
     carriedBy: string | null; // The ID of the agent that is carrying the parcel, or null if not carried
-    
-    lastUpdated: number; // Timestamp of the last time the parcel information was updated
+
+    lastTimeObserved: number; // Timestamp of the last time the parcel information was updated
 
     constructor(
         id: string,
@@ -19,7 +19,7 @@ class Parcel {
         this.carriedBy = carriedBy;
         this.reward = reward;
 
-        this.lastUpdated = Date.now();
+        this.lastTimeObserved = Date.now();
     }
 }
 export { Parcel };

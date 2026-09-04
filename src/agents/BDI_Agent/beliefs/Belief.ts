@@ -1,14 +1,12 @@
 import {Tile} from "@/agents/BDI_Agent/beliefs/primitives/Tile"
 import {Parcel} from "@/agents/BDI_Agent/beliefs/primitives/Parcel"
 import {Agent} from "@/agents/BDI_Agent/beliefs/primitives/Agent"
+import {Crate} from "@/agents/BDI_Agent/beliefs/primitives/Crate"
 
 type GameMap = { width: number, height: number, grid: Tile[][] };
 type Position = { x: number, y: number };
 
-type DynamicBelief = { agents: Agent[]; parcels: Parcel[] };
-
-// export type Crate = { id: string, x: number, y: number};
-
+type DynamicBelief = { agents: Agent[]; parcels: Parcel[], crates: Crate[]};
 
 type PlayerConfig = {
     movement_duration: number,
@@ -35,24 +33,26 @@ type GameConfig = {
 
 class Belief {
     gameConfig: GameConfig;
-
+    me: Agent
     map: GameMap;
-    // crates: Crate[] = [];
+
     parcels: Map<string, Parcel>;
     agents: Map<string, Agent>;
-
-    me: Agent
+    crates: Map<string, Crate>;
 
     parcelsDecayTimer: ReturnType<typeof setInterval> | null = null;
-    tilesObservationTimer: ReturnType<typeof setInterval> | null = null;
+    observationTimer: ReturnType<typeof setInterval> | null = null;
+
 
     constructor(gameConfig: GameConfig, gameMap: GameMap, me: Agent) {
         this.gameConfig = gameConfig;
         this.me = me;
-        this._setupGameMap(gameMap)
 
         this.parcels = new Map<string, Parcel>();
         this.agents = new Map<string, Agent>();
+        this.crates = new Map<string, Crate>();
+
+        this._setupGameMap(gameMap)
     }
 
     private _setupGameMap(gameMap: GameMap): void {
@@ -71,16 +71,37 @@ class Belief {
             }, this.gameConfig.parcel.decay_interval);
         }
 
-        this.tilesObservationTimer = setInterval(() => {
-            this.updateLastObservedTiles();
+        this.observationTimer = setInterval(() => {
+            this._updateLastObservedTiles();
+
+            // Even if I do not receive any new sensing data, I update my lastTimeObserved for the dynamic beliefs that I can see.
+            this._updateLastObservedDynamicBeliefs();
+
         }, this.gameConfig.clock);
+
+        this._seedCratesFromMap();
+    }
+
+    // Seed crates from the map's crate spawner tiles. These are unconfirmed guesses that will be promoted to confirmed crates once observed.
+    private _seedCratesFromMap(): void {
+        this.map.grid.forEach((column, x) => {
+            column.forEach((tile, y) => {
+                if (tile.isCrateSpawner) {
+                    this.crates.set(this._seedCrateKey({ x, y }), new Crate(null, { x, y }));
+                }
+            });
+        });
+    }
+
+    private _seedCrateKey(position: Position): string {
+        return `seed:${position.x},${position.y}`;
     }
 
     updateMe(me: Agent): void {
-        this.me = me;
+        this.me.update(me);
     }
 
-    updateLastObservedTiles(): void {
+    private _updateLastObservedTiles(): void {
         this.map.grid.forEach((column, x) => {
             column.forEach((tile, y) => {
                 if (this._isInsideObservingArea({ x, y })) {
@@ -90,15 +111,59 @@ class Belief {
         });
     }
 
+    private _updateLastObservedDynamicBeliefs(): void {
+        this.parcels.forEach((parcel) => {
+            if (this._isInsideObservingArea(parcel.position)) {
+                parcel.lastTimeObserved = Date.now();
+            }
+        });
+        this.agents.forEach((agent) => {
+            if (this._isInsideObservingArea(agent.position)) {
+                agent.lastTimeObserved = Date.now();
+            }
+        });
+        this.crates.forEach((crate) => {
+            if (this._isInsideObservingArea(crate.position)) {
+                crate.lastTimeObserved = Date.now();
+            }
+        });
+    }
+
     updateBeliefs(dynamicBelief: DynamicBelief): void {
         this.updateParcels(dynamicBelief.parcels);
         this.updateAgents(dynamicBelief.agents);
+        this.updateCrates(dynamicBelief.crates);
     }
 
     updateAgents(sensedAgents: Agent[]): void {
         for (const sensedAgent of sensedAgents) {
-            this.agents.set(sensedAgent.id, sensedAgent);
+            const existingAgent = this.agents.get(sensedAgent.id);
+            if (existingAgent) {
+                existingAgent.update(sensedAgent);
+            } else {
+                this.agents.set(sensedAgent.id, sensedAgent);
+            }
         }
+    }
+
+    updateCrates(sensedCrates: Crate[]): void {
+        // Crates are never deleted, only moved: a confirmed crate always gets refreshed in
+        // place (by real id) here, never removed for going unseen.
+        for (const sensedCrate of sensedCrates) {
+            this.crates.delete(this._seedCrateKey(sensedCrate.position)); // promote a matching seed instead of duplicating it
+            this.crates.set(sensedCrate.id, sensedCrate);
+        }
+
+        // Unconfirmed seed guesses are the only entries ever discarded: if a seed's position is
+        // currently observed and no crate showed up there, the crate already moved elsewhere
+        // before we arrived and the guess is simply wrong.
+        this.crates.forEach((believedCrate: Crate, key: string) => {
+            if (believedCrate.id === null
+                && this._isInsideObservingArea(believedCrate.position)
+                && !sensedCrates.some((c) => c.position.x === believedCrate.position.x && c.position.y === believedCrate.position.y)) {
+                this.crates.delete(key);
+            }
+        })
     }
 
     updateParcels(sensedParcels: Parcel[]): void {
@@ -119,14 +184,14 @@ class Belief {
         return Math.abs(this.me.position.x - position.x) + Math.abs(this.me.position.y - position.y) <= this.gameConfig.agent.observation_distance
     }
     
-    toString(rotateGridView: boolean = true): string {
+    toString(rotateGridView: boolean = true, showHeatMap: boolean = false): string {
         let beliefString = '*** BELIEF ***\n\n';
 
         beliefString += this._meToString();
-        // beliefString += '\n=========\n';
-        // beliefString += this._gameConfigToString();
         beliefString += '\n=========\n';
-        beliefString += this._gridToString(rotateGridView);
+        beliefString += this._gameConfigToString();
+        beliefString += '\n=========\n';
+        beliefString += this._gridToString(rotateGridView, showHeatMap);
         beliefString += '\n=========\n';
         beliefString += this._parcelsToString();
         beliefString += '\n=========\n';
@@ -153,9 +218,9 @@ class Belief {
     private _parcelsToString(): string {
         let parcelsString = 'Parcels:\n';
         let now = Date.now();
-        const sortedParcels = [...this.parcels.values()].sort((a, b) => b.lastUpdated - a.lastUpdated);
+        const sortedParcels = [...this.parcels.values()].sort((a, b) => b.lastTimeObserved - a.lastTimeObserved);
         for (const parcel of sortedParcels) {
-            let timeSinceUpdate = ((now - parcel.lastUpdated) / 1000).toFixed(2);
+            let timeSinceUpdate = ((now - parcel.lastTimeObserved) / 1000).toFixed(2);
             parcelsString += `  - Parcel ${parcel.id}: Position (${parcel.position.x}, ${parcel.position.y}), Carried by: ${parcel.carriedBy}, Reward: ${parcel.reward}, Time since update: ${timeSinceUpdate}s\n`;
         }
 
@@ -165,16 +230,17 @@ class Belief {
     private _agentsToString(): string {
         let agentsString = 'Agents:\n';
         let now = Date.now();
-        const sortedAgents = [...this.agents.values()].sort((a, b) => b.lastUpdated - a.lastUpdated);
+        const sortedAgents = [...this.agents.values()].sort((a, b) => b.lastTimeObserved - a.lastTimeObserved);
         for (const agent of sortedAgents) {
-            let timeSinceUpdate = ((now - agent.lastUpdated) / 1000).toFixed(2);
-            agentsString += `  - Agent ${agent.id}: Position (${agent.position.x}, ${agent.position.y}), Score: ${agent.score}, Penalty: ${agent.penalty}, Time since update: ${timeSinceUpdate}s\n`;
+            let timeSinceUpdate = ((now - agent.lastTimeObserved) / 1000).toFixed(2);
+            let directions = agent.historyDirections(3).map((dir) => dir.toString()).join(' <- ');
+            agentsString += `  - Agent ${agent.id}, pos (${agent.position.x}, ${agent.position.y}), dirs: ${directions}, score: ${agent.score}, last update: ${timeSinceUpdate}s\n`;
         }
 
         return agentsString;
     }
 
-    private _gridToString(rotateGridView: boolean = true): string {
+    private _gridToString(rotateGridView: boolean = true, showHeatMap: boolean = false): string {
         const { width, height, grid } = this.map;
         const getTile = (x: number, y: number): Tile => rotateGridView ? grid[x][y] : grid[y][x];
         const rowIndices = rotateGridView
@@ -201,13 +267,26 @@ class Belief {
 
                 this.agents.forEach((agent) => {
                     if (agent.position.x === x && agent.position.y === y) {
-                        tileInfo = "🤖"; // Highlight other agents' positions
+                        tileInfo = "🐌"; // Highlight other agents' positions
                     }
                 })
 
+                this.crates.forEach((crate) => {
+                    if (crate.position.x === x && crate.position.y === y) {
+                        if (crate.id === null) {
+                            tileInfo = "⚙️"; // Highlight unconfirmed crates' positions
+                        } else {
+                            tileInfo = "📦"; // Highlight confirmed crates' positions
+                        }
+                    }
+                });
+
                 const tile = getTile(x, y);
-                const heatColor = this._observedHeatColor(tile.lastTimeObserved);
-                gridString += tile.toString(tileInfo, heatColor);
+                if (showHeatMap) {
+                    gridString += tile.toString(tileInfo, this._observedHeatColor(tile.lastTimeObserved));
+                } else {
+                    gridString += tile.toString(tileInfo);
+                }
             }
             gridString += '\n';
         }
@@ -221,7 +300,7 @@ class Belief {
 
     // Cold (never/long unobserved) -> hot (just observed) gradient endpoints
 
-    private _observedHeatColor(lastTimeObserved: number): {r: number, g: number, b: number} | string {
+    private _observedHeatColor(lastTimeObserved: number): {r: number, g: number, b: number} {
         const HEAT_HALF_LIFE_MS = this.gameConfig.clock * 30;
         const HEAT_COLD = { r: 20, g: 20, b: 60 };
         const HEAT_HOT = { r: 255, g: 60, b: 60 };
