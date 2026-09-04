@@ -23,7 +23,7 @@ async function main() {
 
 
 //====================================================
-//  Terminal UI
+//  Terminal UI 
 //====================================================
 
 function setupTerminalUI(bdi_agent: BDI_Agent) {
