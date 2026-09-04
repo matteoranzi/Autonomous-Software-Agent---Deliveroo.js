@@ -166,19 +166,51 @@ class Belief {
             this._emitRelevantChanges4Desires();
         }
 
-        this.updateAgents(dynamicBelief.agents);
+        if (this.updateAgents(dynamicBelief.agents)) {
+            this._emitRelevantChanges4Desires();
+        }
+
         this.updateCrates(dynamicBelief.crates);
     }
 
-    updateAgents(sensedAgents: Agent[]): void {
+    updateAgents(sensedAgents: Agent[]): boolean {
+        let importantChanges = false;
+
         for (const sensedAgent of sensedAgents) {
             const existingAgent = this.agents.get(sensedAgent.id);
             if (existingAgent) {
+                let previousPosition = existingAgent.position;
                 existingAgent.update(sensedAgent);
+                let currentPosition = existingAgent.position;
+
+                // If agent changed position
+                if (!positionsEqual(previousPosition, currentPosition)) {
+                    let previousTile = this.map.grid[previousPosition.x][previousPosition.y];
+                    let currentTile = this.map.grid[currentPosition.x][currentPosition.y];
+
+                    // Entered or exited a delivery tile
+                    if (previousTile.isParcelDelivery || currentTile.isParcelDelivery) {
+                        importantChanges = true;
+                    }
+
+                    // Entered or exited a tile containing a parcel (which could be picked up or dropped off)
+                    [...this.parcels.values()].some((parcel) => {
+                        if (positionsEqual(parcel.position, previousPosition) || positionsEqual(parcel.position, currentPosition)) {
+                            importantChanges = true;
+                            return true;
+                        }
+                    });
+                }
             } else {
                 this.agents.set(sensedAgent.id, sensedAgent);
+
+                if (this.map.grid[sensedAgent.position.x][sensedAgent.position.y].isParcelDelivery) {
+                    importantChanges = true;
+                }
             }
         }
+
+        return importantChanges;
     }
 
     updateCrates(sensedCrates: Crate[]): void {
@@ -210,12 +242,12 @@ class Belief {
         // - A believed parcel disappears from the observed area
         // - A parcel is taken by another agent (carriedBy changes from null to an agent id)
         // - A parcel is dropped by another agent (carriedBy changes from an agent id to null)
-        let changed = false;
+        let importantChanges = false;
 
         for (const sensedParcel of sensedParcels) {
             let parcel = this.parcels.get(sensedParcel.id);
             if (!parcel || parcel.carriedBy !== sensedParcel.carriedBy) {
-                changed = true;
+                importantChanges = true;
             }
 
             this.parcels.set(sensedParcel.id, sensedParcel);
@@ -225,14 +257,19 @@ class Belief {
         // Remove stale parcels believed to exist in the current observing area, but that are no more present.
         this.parcels.forEach((believedParcel: Parcel) => {
             if (this._isInsideObservingArea(believedParcel.position) && !sensedParcels.some((p) => p.id === believedParcel.id)) {
-                changed = true;
+                importantChanges = true;
                 this.parcels.delete(believedParcel.id);
             }
         })
 
-        return changed;
+        return importantChanges;
     }
 
+    // TODO create an alternative method that takes into consideration how long the tile has been:
+    //  - unobserved
+    //  - blocked by another agent (i.e., how long it stayed still on such position)
+    //  - crowding of surroundings
+    //  ---> not a boolean value but a Fuzzy Logic score
     isPositionCurrentlyWalkable(position: Position): boolean {
         // A tile is blocked if it is outside the map, if the terrain itself isn't walkable,
         // or if it is currently occupied by a crate or another agent.
@@ -263,15 +300,17 @@ class Belief {
         return Math.abs(this.me.position.x - position.x) + Math.abs(this.me.position.y - position.y) <= this.gameConfig.agent.observation_distance
     }
 
-    toString(rotateGridView: boolean = true, showHeatMap: boolean = false): string {
+    toString(showGridMap: boolean = false, showHeatMap: boolean = false): string {
         let beliefString = '*** BELIEF ***\n\n';
 
         beliefString += this._meToString();
         beliefString += '\n=========\n';
-        // beliefString += this._gameConfigToString();
-        // beliefString += '\n=========\n';
-        // beliefString += this._gridToString(rotateGridView, showHeatMap);
-        // beliefString += '\n=========\n';
+        beliefString += this._gameConfigToString();
+        if (showGridMap) {
+            beliefString += '\n=========\n';
+            beliefString += this._gridToString(showHeatMap);
+        }
+        beliefString += '\n=========\n';
         beliefString += this._parcelsToString();
         beliefString += '\n=========\n';
         beliefString += this._agentsToString()
@@ -319,12 +358,10 @@ class Belief {
         return agentsString;
     }
 
-    private _gridToString(rotateGridView: boolean = true, showHeatMap: boolean = false): string {
+    private _gridToString(showHeatMap: boolean = false): string {
         const {width, height, grid} = this.map;
-        const getTile = (x: number, y: number): Tile => rotateGridView ? grid[x][y] : grid[y][x];
-        const rowIndices = rotateGridView
-            ? Array.from({length: height}, (_, i) => height - 1 - i)
-            : Array.from({length: height}, (_, i) => i);
+        const getTile = (x: number, y: number): Tile => grid[x][y];
+        const rowIndices = Array.from({length: height}, (_, i) => height - 1 - i)
 
         // Total reward of parcels at each position, indexed as "x,y" (for visualization purposes)
         const rewardByPosition = new Map<string, number>();

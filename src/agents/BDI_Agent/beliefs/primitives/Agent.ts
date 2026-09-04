@@ -91,14 +91,14 @@ class Agent {
     // history instead of being replaced wholesale. If the new position is farther than
     // maxJumpDistance (Manhattan, default: 1) from the last known one, the trail is discontinuous (unobserved moves happened in between)
     // so the history is reset instead of splicing in a jump.
-    update(sensed: Agent, maxJumpDistance: number = 1): void {
-        if (manhattanDistance(sensed.position, this.position) > maxJumpDistance) {
+    update(newAgent: Agent, maxJumpDistance: number = 1): void {
+        if (manhattanDistance(newAgent.position, this.position) > maxJumpDistance) {
             this._historyPositions.clear();
         }
 
-        this.addPosition(sensed.position);
-        this.score = sensed.score;
-        this.penalty = sensed.penalty;
+        this.addPosition(newAgent.position);
+        this.score = newAgent.score;
+        this.penalty = newAgent.penalty;
     }
 }
 

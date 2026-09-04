@@ -114,7 +114,7 @@ class BDI_Agent {
         bdi_agent_str += "BDI_Agent: " + this.belief.me.id + "\n";
         bdi_agent_str += "*************************************************************\n\n";
 
-        bdi_agent_str += this.belief.toString(true, this._appConfig.showHeatMapInUI);
+        bdi_agent_str += this.belief.toString(this._appConfig.showGridMapInUI, this._appConfig.showHeatMapInUI);
 
         bdi_agent_str += "\n\n*************************************************************\n\n";
         bdi_agent_str += "*** DESIRE ***\n\n";
