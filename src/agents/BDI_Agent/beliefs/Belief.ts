@@ -4,6 +4,16 @@ import {Agent} from "@/agents/BDI_Agent/beliefs/primitives/Agent"
 import {Crate} from "@/agents/BDI_Agent/beliefs/primitives/Crate"
 import {TypedBeliefEmitter} from "@/agents/BDI_Agent/beliefs/events";
 import {positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
+import {
+    AgentsDiff,
+    DeliberationContext,
+    emptyAgentsDiff,
+    emptyParcelsDiff,
+    IChangeDetectionStrategy,
+    ParcelsDiff, ParcelVanishReason,
+    TriggeredStrategyResult,
+} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
+import {defaultChangeDetectionStrategies} from "@/agents/BDI_Agent/beliefs/changeDetection/defaultChangeDetectionStrategies";
 
 type GameMap = { width: number, height: number, grid: Tile[][] };
 type Position = { x: number, y: number };
@@ -51,8 +61,9 @@ class Belief {
     observationTimer: ReturnType<typeof setInterval> | null = null;
 
     private readonly _beliefEvents: TypedBeliefEmitter;
+    private readonly _strategies: IChangeDetectionStrategy[];
 
-    constructor(gameConfig: GameConfig, gameMap: GameMap, me: Agent) {
+    constructor(gameConfig: GameConfig, gameMap: GameMap, me: Agent, strategies: IChangeDetectionStrategy[] = defaultChangeDetectionStrategies) {
         this.gameConfig = gameConfig;
         this.me = me;
 
@@ -64,6 +75,7 @@ class Belief {
         this.parcelDeliveryTiles = new Array<Position>();
 
         this._beliefEvents = new TypedBeliefEmitter();
+        this._strategies = strategies;
 
         this._setupGameMap(gameMap)
     }
@@ -85,19 +97,22 @@ class Belief {
         // Decay the reward of the parcels every parcelsDecayInterval ms
         if (this.gameConfig.parcel.decay_interval < Infinity) {
             this.parcelsDecayTimer = setInterval(() => {
-                let importantChange = false;
+                const parcelsDiff = emptyParcelsDiff();
                 for (const parcel of this.parcels.values()) {
                     if (parcel.reward < 1) {
-                        importantChange = true;
+                        parcelsDiff.vanishedParcels.push({id: parcel.id, reason: ParcelVanishReason.Decayed});
                         this.parcels.delete(parcel.id);
                     } else {
                         parcel.reward--;
                     }
                 }
 
-                if (importantChange) {
-                    this._emitRelevantChanges4Desires();
-                }
+                this._evaluateChangeStrategies({
+                    belief: this,
+                    parcels: parcelsDiff,
+                    agents: emptyAgentsDiff(),
+                    facts: new Map(),
+                });
             }, this.gameConfig.parcel.decay_interval);
         }
 
@@ -111,7 +126,9 @@ class Belief {
 
         this._seedCratesFromMap();
 
-        this._emitRelevantChanges4Desires();
+        // Initial readiness signal, not a detected change - nothing to attribute to a
+        // strategy, so this bypasses _evaluateChangeStrategies and emits directly.
+        this._emitRelevantChangesForDesires([]);
     }
 
     // Seed crates from the map's crate spawner tiles. These are unconfirmed guesses that will be promoted to confirmed crates once observed.
@@ -162,19 +179,20 @@ class Belief {
     }
 
     updateBeliefs(dynamicBelief: DynamicBelief): void {
-        if (this.updateParcels(dynamicBelief.parcels)) {
-            this._emitRelevantChanges4Desires();
-        }
-
-        if (this.updateAgents(dynamicBelief.agents)) {
-            this._emitRelevantChanges4Desires();
-        }
-
+        const parcelsDiff = this.updateParcels(dynamicBelief.parcels);
+        const agentsDiff = this.updateAgents(dynamicBelief.agents);
         this.updateCrates(dynamicBelief.crates);
+
+        this._evaluateChangeStrategies({
+            belief: this,
+            parcels: parcelsDiff,
+            agents: agentsDiff,
+            facts: new Map(),
+        });
     }
 
-    updateAgents(sensedAgents: Agent[]): boolean {
-        let importantChanges = false;
+    updateAgents(sensedAgents: Agent[]): AgentsDiff {
+        const diff = emptyAgentsDiff();
 
         for (const sensedAgent of sensedAgents) {
             const existingAgent = this.agents.get(sensedAgent.id);
@@ -190,13 +208,13 @@ class Belief {
 
                     // Entered or exited a delivery tile
                     if (previousTile.isParcelDelivery || currentTile.isParcelDelivery) {
-                        importantChanges = true;
+                        diff.enteredOrExitedDeliveryTileIds.push(sensedAgent.id);
                     }
 
                     // Entered or exited a tile containing a parcel (which could be picked up or dropped off)
                     [...this.parcels.values()].some((parcel) => {
                         if (positionsEqual(parcel.position, previousPosition) || positionsEqual(parcel.position, currentPosition)) {
-                            importantChanges = true;
+                            diff.enteredOrExitedParcelTileIds.push(sensedAgent.id);
                             return true;
                         }
                     });
@@ -205,12 +223,12 @@ class Belief {
                 this.agents.set(sensedAgent.id, sensedAgent);
 
                 if (this.map.grid[sensedAgent.position.x][sensedAgent.position.y].isParcelDelivery) {
-                    importantChanges = true;
+                    diff.enteredOrExitedDeliveryTileIds.push(sensedAgent.id);
                 }
             }
         }
 
-        return importantChanges;
+        return diff;
     }
 
     updateCrates(sensedCrates: Crate[]): void {
@@ -236,18 +254,20 @@ class Belief {
         })
     }
 
-    updateParcels(sensedParcels: Parcel[]): boolean {
-        // Major changes to notify:
+    updateParcels(sensedParcels: Parcel[]): ParcelsDiff {
+        // Facts tracked:
         // - A new parcel appears (not in the belief yet)
         // - A believed parcel disappears from the observed area
         // - A parcel is taken by another agent (carriedBy changes from null to an agent id)
         // - A parcel is dropped by another agent (carriedBy changes from an agent id to null)
-        let importantChanges = false;
+        const diff = emptyParcelsDiff();
 
         for (const sensedParcel of sensedParcels) {
             let parcel = this.parcels.get(sensedParcel.id);
-            if (!parcel || parcel.carriedBy !== sensedParcel.carriedBy) {
-                importantChanges = true;
+            if (!parcel) {
+                diff.newParcelIds.push(sensedParcel.id);
+            } else if (parcel.carriedBy !== sensedParcel.carriedBy) {
+                diff.carriedByChangedIds.push(sensedParcel.id);
             }
 
             this.parcels.set(sensedParcel.id, sensedParcel);
@@ -257,12 +277,12 @@ class Belief {
         // Remove stale parcels believed to exist in the current observing area, but that are no more present.
         this.parcels.forEach((believedParcel: Parcel) => {
             if (this._isInsideObservingArea(believedParcel.position) && !sensedParcels.some((p) => p.id === believedParcel.id)) {
-                importantChanges = true;
+                diff.vanishedParcels.push({id: believedParcel.id, reason: ParcelVanishReason.Unobserved});
                 this.parcels.delete(believedParcel.id);
             }
         })
 
-        return importantChanges;
+        return diff;
     }
 
     // TODO create an alternative method that takes into consideration how long the tile has been:
@@ -433,14 +453,38 @@ class Belief {
     // ============================================================================================
     // Belief events
     // ============================================================================================
-    private _emitRelevantChanges4Desires(): void {
-        this._beliefEvents.emit('relevantChanges4Desires');
+
+    // Runs the registered change-detection strategies, in order, against this cycle's diff data.
+    // Each strategy's result is written into context.facts as a side effect (so a later
+    // strategy - e.g. a future fuzzy evaluator - can read an earlier one's output by name),
+    // then every strategy that reported triggered=true is emitted together on
+    // relevantChanges4Desires.
+    private _evaluateChangeStrategies(context: DeliberationContext): void {
+        const triggeredResults: TriggeredStrategyResult[] = [];
+
+        for (const strategy of this._strategies) {
+            const result = strategy.evaluate(context);
+            context.facts.set(strategy.name, result);
+
+            if (result.triggered) {
+                triggeredResults.push({name: strategy.name, ...result});
+            }
+        }
+
+        if (triggeredResults.length > 0) {
+            this._emitRelevantChangesForDesires(triggeredResults);
+        }
     }
 
     // Fires whenever a belief change could affect the current set of desires (e.g. a parcel
-    // appearing or disappearing), so listeners know to regenerate their desire list.
-    onRelevantChangesForDesires(callback: () => void): void {
+    // appearing or disappearing), so listeners know to regenerate their desire list. Carries
+    // every strategy that triggered this cycle (empty on the initial post-construction kickoff).
+    onRelevantChangesForDesires(callback: (results: TriggeredStrategyResult[]) => void): void {
         this._beliefEvents.on('relevantChanges4Desires', callback);
+    }
+
+    _emitRelevantChangesForDesires(results: TriggeredStrategyResult[]): void {
+        this._beliefEvents.emit('relevantChanges4Desires', results);
     }
 }
 

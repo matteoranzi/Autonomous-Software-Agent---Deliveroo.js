@@ -1,8 +1,11 @@
 // beliefs/events.ts
 import { EventEmitter } from 'events';
+import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
 
 interface BeliefEvents {
-    relevantChanges4Desires: () => void;
+    // Carries every strategy that reported triggered=true this cycle (empty array on the
+    // initial post-construction kickoff, since that's not a detected change).
+    relevantChanges4Desires: (results: TriggeredStrategyResult[]) => void;
 }
 
 class TypedBeliefEmitter extends EventEmitter {
@@ -12,13 +15,7 @@ class TypedBeliefEmitter extends EventEmitter {
     emit<K extends keyof BeliefEvents>(event: K, ...args: Parameters<BeliefEvents[K]>): boolean {
         return super.emit(event, ...args);
     }
-    // off<K extends keyof BeliefEvents>(event: K, ...args: Parameters<BeliefEvents[K]>): boolean {
-    //     return super.off(event, ...args);
-    // }
-    //
-    // removeListener<K extends keyof BeliefEvents>(event: K, ...args: Parameters<BeliefEvents[K]>): boolean {
-    //     return super.removeListener(event, ...args);
-    // }
+    // off/removeListener commented out
 }
 
 export {TypedBeliefEmitter}

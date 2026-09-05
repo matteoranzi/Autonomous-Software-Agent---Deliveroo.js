@@ -57,6 +57,10 @@ decoupling "desire list membership changed"
   * desire: explore any unobserved parcel spawning tile
   * score: distance, (crowding), lastTimeObserved (favor tiles that haven't been seen in a while)
   * **note: a strategic explore would be to position and wait until a parcel spawns.**
+* ExploreStaleObservations:
+  * (example) precondition: agent is carrying a parcel but thinks no delivery tile is available (i.e, all delivery tiles are occupied by other agents)
+  * desire: find a delivery tile that is not currently occupied by another agent
+  * score: distance, (crowding), lastTimeObserved (favor tiles that haven't been seen in a while)
 
 Once all the valid desires are generated and filtered, a **STATE GRAPH IS BUILT** over which **Monte Carlo Tree Search** (MCTS) will run.
 The state graph is built by simulating all valid move sequences the agent can take from its current position
@@ -86,3 +90,11 @@ This algorithm here is used to identify hotspots in the map that let, collective
 ![Greedy Maximum Graph Coverage](imgs/greedy_maximum_graph_coverage.png)
 For each area, I should identify a set of tiles that are able to make such observation, in order to fallback on those if the main one is occupied.
 ![Maximum Coverage Location Problem](imgs/maximum_coverage_location_problem.jpeg)
+
+---
+
+## Option Generation
+The agent surveys its current beliefs and existing intentions to generate a menu of potential new desires. For example, if an autonomous rover believes a storm is approaching and currently intends to collect soil samples, it might generate a new desire to seek shelter
+
+**TODO**
+> Currently, the agent doesn't take into consideration active intention while filtering desires
