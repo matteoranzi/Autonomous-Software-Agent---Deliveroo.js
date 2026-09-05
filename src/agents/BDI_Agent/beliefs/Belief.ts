@@ -101,7 +101,7 @@ class Belief {
                 const parcelsDiff = emptyParcelsDiff();
                 for (const parcel of this.parcels.values()) {
                     if (parcel.reward < 1) {
-                        parcelsDiff.vanished.push({id: parcel.id, reason: ParcelVanishReason.Decayed, carriedBy: parcel.carriedBy});
+                        parcelsDiff.vanished.push({id: parcel.id, reason: ParcelVanishReason.Decayed, carriedBy: parcel.carriedBy, position: parcel.position});
                         this.parcels.delete(parcel.id);
                     } else {
                         parcel.reward--;
@@ -277,7 +277,7 @@ class Belief {
         // Remove stale parcels believed to exist in the current observing area, but that are no more present.
         this.parcels.forEach((believedParcel: Parcel) => {
             if (this.isInsideObservingArea(believedParcel.position) && !sensedParcels.some((p) => p.id === believedParcel.id)) {
-                diff.vanished.push({id: believedParcel.id, reason: ParcelVanishReason.Unobserved, carriedBy: believedParcel.carriedBy});
+                diff.vanished.push({id: believedParcel.id, reason: ParcelVanishReason.Unobserved, carriedBy: believedParcel.carriedBy, position: believedParcel.position});
                 this.parcels.delete(believedParcel.id);
             }
         })

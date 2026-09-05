@@ -21,6 +21,8 @@ import {
 import {
     SelfAgentDroppedParcelStrategy
 } from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/SelfAgentDroppedParcelStrategy";
+import {SelfAgentDeliveredParcelStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/SelfAgentDeliveredParcelStrategy";
+import {RivalAgentDeliveredParcelStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/RivalAgentDeliveredParcelStrategy";
 
 class ChangeDetectionStrategyBuilder {
     private readonly estimators: IChangeDetectionEstimator[] = [];
@@ -116,6 +118,16 @@ class ChangeDetectionStrategyBuilder {
         return this;
     }
 
+    withSelfDeliveredParcel(): this {
+        this.strategies.push(new SelfAgentDeliveredParcelStrategy());
+        return this;
+    }
+
+    withRivalDeliveredParcel(): this {
+        this.strategies.push(new RivalAgentDeliveredParcelStrategy());
+        return this;
+    }
+
     // Escape hatches for custom estimators/strategies without the builder needing to know about them ahead of time.
     withEstimator(estimator: IChangeDetectionEstimator): this {
         this.estimators.push(estimator);
@@ -146,7 +158,9 @@ class ChangeDetectionStrategyBuilder {
             .withSelfEnteredParcelTile()
             .withSelfExitedParcelTile()
             .withSelfPickedUpParcel()
-            .withSelfDroppedParcel();
+            .withSelfDroppedParcel()
+            .withSelfDeliveredParcel()
+            .withRivalDeliveredParcel();
     }
 
     // Estimators always precede strategies, regardless of with*() call order.

@@ -56,6 +56,7 @@ class BDI_Agent {
         this.desiresGenerator = new DesiresGenerator(this.belief);
         this.intention = new Intention(new HighestScoreIntentionStrategy());
 
+        // Generate initial desires and deliberate on them.
         this.desiresGenerator.regenerate().filter()
         this.intention.deliberate(this.desiresGenerator.desires);
 
@@ -63,7 +64,7 @@ class BDI_Agent {
         let desiresGenerationBackstopTimer: ReturnType<typeof setInterval> = setInterval(() => {
             this.desiresGenerator.regenerate().filter()
             this.intention.deliberate(this.desiresGenerator.desires);
-        }, 10000) // TODO make this configurable
+        }, 1000) // TODO make this configurable
 
         // Listen for relevant changes in the belief and update the desires accordingly.
         this.belief.onRelevantChangesForDesires((results : TriggeredStrategyResult[]) => {
