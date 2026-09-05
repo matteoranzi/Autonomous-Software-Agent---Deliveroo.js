@@ -4,7 +4,7 @@ class RivalEnteredParcelTileStrategy implements IChangeDetectionStrategy {
     readonly name = 'RivalEnteredParcelTile';
 
     evaluate(context: DeliberationContext): StrategyResult {
-        const triggered = context.agents.enteredOrExitedParcelTileIds.length > 0;
+        const triggered = context.agents.enteredParcelTileIds.length > 0 || context.agents.exitedParcelTileIds.length > 0;
         return {triggered, degree: triggered ? 1 : 0};
     }
 }

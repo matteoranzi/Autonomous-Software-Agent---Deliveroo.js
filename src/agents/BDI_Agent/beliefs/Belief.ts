@@ -5,15 +5,15 @@ import {Crate} from "@/agents/BDI_Agent/beliefs/primitives/Crate"
 import {TypedBeliefEmitter} from "@/agents/BDI_Agent/beliefs/events";
 import {positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
 import {
-    AgentsDiff,
+    AgentsDiff, CratesDiff,
     DeliberationContext,
-    emptyAgentsDiff,
+    emptyAgentsDiff, emptyCratesDiff,
     emptyParcelsDiff,
     IChangeDetectionStrategy,
     ParcelsDiff, ParcelVanishReason,
     TriggeredStrategyResult,
 } from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
-import {defaultChangeDetectionStrategies} from "@/agents/BDI_Agent/beliefs/changeDetection/defaultChangeDetectionStrategies";
+import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/changeDetection/ChangeDetectionStrategyBuilder";
 
 type GameMap = { width: number, height: number, grid: Tile[][] };
 type Position = { x: number, y: number };
@@ -61,9 +61,9 @@ class Belief {
     observationTimer: ReturnType<typeof setInterval> | null = null;
 
     private readonly _beliefEvents: TypedBeliefEmitter;
-    private readonly _strategies: IChangeDetectionStrategy[];
+    private readonly _changeDetectionStrategies: IChangeDetectionStrategy[];
 
-    constructor(gameConfig: GameConfig, gameMap: GameMap, me: Agent, strategies: IChangeDetectionStrategy[] = defaultChangeDetectionStrategies) {
+    constructor(gameConfig: GameConfig, gameMap: GameMap, me: Agent, strategies: IChangeDetectionStrategy[] = new ChangeDetectionStrategyBuilder().withDefaults().build()) {
         this.gameConfig = gameConfig;
         this.me = me;
 
@@ -75,7 +75,7 @@ class Belief {
         this.parcelDeliveryTiles = new Array<Position>();
 
         this._beliefEvents = new TypedBeliefEmitter();
-        this._strategies = strategies;
+        this._changeDetectionStrategies = strategies;
 
         this._setupGameMap(gameMap)
     }
@@ -111,6 +111,7 @@ class Belief {
                     belief: this,
                     parcels: parcelsDiff,
                     agents: emptyAgentsDiff(),
+                    crates: emptyCratesDiff(),
                     facts: new Map(),
                 });
             }, this.gameConfig.parcel.decay_interval);
@@ -181,12 +182,13 @@ class Belief {
     updateBeliefs(dynamicBelief: DynamicBelief): void {
         const parcelsDiff = this.updateParcels(dynamicBelief.parcels);
         const agentsDiff = this.updateAgents(dynamicBelief.agents);
-        this.updateCrates(dynamicBelief.crates);
+        const cratesDiff = this.updateCrates(dynamicBelief.crates);
 
         this._evaluateChangeStrategies({
             belief: this,
             parcels: parcelsDiff,
             agents: agentsDiff,
+            crates: cratesDiff,
             facts: new Map(),
         });
     }
@@ -206,24 +208,28 @@ class Belief {
                     let previousTile = this.map.grid[previousPosition.x][previousPosition.y];
                     let currentTile = this.map.grid[currentPosition.x][currentPosition.y];
 
-                    // Entered or exited a delivery tile
-                    if (previousTile.isParcelDelivery || currentTile.isParcelDelivery) {
-                        diff.enteredOrExitedDeliveryTileIds.push(sensedAgent.id);
+                    if (currentTile.isParcelDelivery) {
+                        diff.enteredDeliveryTileIds.push(sensedAgent.id);
+                    }
+                    if (previousTile.isParcelDelivery) {
+                        diff.exitedDeliveryTileIds.push(sensedAgent.id);
                     }
 
                     // Entered or exited a tile containing a parcel (which could be picked up or dropped off)
-                    [...this.parcels.values()].some((parcel) => {
-                        if (positionsEqual(parcel.position, previousPosition) || positionsEqual(parcel.position, currentPosition)) {
-                            diff.enteredOrExitedParcelTileIds.push(sensedAgent.id);
-                            return true;
-                        }
-                    });
+                    const wasOnParcelTile = [...this.parcels.values()].some((parcel) => positionsEqual(parcel.position, previousPosition));
+                    const isOnParcelTile = [...this.parcels.values()].some((parcel) => positionsEqual(parcel.position, currentPosition));
+                    if (isOnParcelTile) {
+                        diff.enteredParcelTileIds.push(sensedAgent.id);
+                    }
+                    if (wasOnParcelTile) {
+                        diff.exitedParcelTileIds.push(sensedAgent.id);
+                    }
                 }
             } else {
                 this.agents.set(sensedAgent.id, sensedAgent);
 
                 if (this.map.grid[sensedAgent.position.x][sensedAgent.position.y].isParcelDelivery) {
-                    diff.enteredOrExitedDeliveryTileIds.push(sensedAgent.id);
+                    diff.enteredDeliveryTileIds.push(sensedAgent.id);
                 }
             }
         }
@@ -231,13 +237,21 @@ class Belief {
         return diff;
     }
 
-    updateCrates(sensedCrates: Crate[]): void {
-        // Crates are never deleted, only moved: a confirmed crate always gets refreshed in
-        // place (by real id) here, never removed for going unseen.
+    updateCrates(sensedCrates: Crate[]): CratesDiff {
+        const diff = emptyCratesDiff();
+
         for (const sensedCrate of sensedCrates) {
             if (sensedCrate.id === null) {
                 continue; // sensed crates always carry a real id; a null one would mean malformed sensing data
             }
+
+            const existingCrate = this.crates.get(sensedCrate.id);
+            if (existingCrate && !positionsEqual(existingCrate.position, sensedCrate.position)) {
+                diff.movedCrateIds.push(sensedCrate.id);
+            }
+
+            // This step is used to confirm the existence of never observed crates that were seeded from the map's crate spawner tiles.
+            // If a crate is sensed at a position where a seed was placed, the seed is removed and the sensed crate is added instead.
             this.crates.delete(this._seedCrateKey(sensedCrate.position)); // promote a matching seed instead of duplicating it
             this.crates.set(sensedCrate.id, sensedCrate);
         }
@@ -248,18 +262,17 @@ class Belief {
         this.crates.forEach((believedCrate: Crate, key: string) => {
             if (believedCrate.id === null
                 && this._isInsideObservingArea(believedCrate.position)
-                && !sensedCrates.some((c) => positionsEqual(c.position, believedCrate.position))) {
+                && !sensedCrates.some((c) => positionsEqual(c.position, believedCrate.position)))
+            {
+                diff.discardedSeedPositions.push(believedCrate.position);
                 this.crates.delete(key);
             }
         })
+
+        return diff;
     }
 
     updateParcels(sensedParcels: Parcel[]): ParcelsDiff {
-        // Facts tracked:
-        // - A new parcel appears (not in the belief yet)
-        // - A believed parcel disappears from the observed area
-        // - A parcel is taken by another agent (carriedBy changes from null to an agent id)
-        // - A parcel is dropped by another agent (carriedBy changes from an agent id to null)
         const diff = emptyParcelsDiff();
 
         for (const sensedParcel of sensedParcels) {
@@ -462,7 +475,7 @@ class Belief {
     private _evaluateChangeStrategies(context: DeliberationContext): void {
         const triggeredResults: TriggeredStrategyResult[] = [];
 
-        for (const strategy of this._strategies) {
+        for (const strategy of this._changeDetectionStrategies) {
             const result = strategy.evaluate(context);
             context.facts.set(strategy.name, result);
 
