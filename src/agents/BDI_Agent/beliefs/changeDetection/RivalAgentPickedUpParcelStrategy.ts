@@ -1,20 +1,11 @@
 import {DeliberationContext, IChangeDetectionStrategy, StrategyResult} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
+import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/ParcelCarriedByEstimator";
 
 class RivalAgentPickedUpParcelStrategy implements IChangeDetectionStrategy {
     readonly name = 'RivalAgentPickedUpParcel';
 
     evaluate(context: DeliberationContext): StrategyResult {
-
-        let triggered: boolean = false;
-        context.parcels.carriedByChangedIds.some((parcelId) => {
-            let parcel = context.belief.parcels.get(parcelId);
-            if (parcel && parcel.carriedBy !== null) {
-                triggered = true;
-                return true;
-            }
-        });
-
-        return {triggered, degree: triggered ? 1 : 0};
+        return context.facts.get(ParcelCarriedByEstimator.PICKED_UP) ?? {triggered: false, degree: 0};
     }
 }
 

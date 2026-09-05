@@ -100,7 +100,7 @@ class Belief {
                 const parcelsDiff = emptyParcelsDiff();
                 for (const parcel of this.parcels.values()) {
                     if (parcel.reward < 1) {
-                        parcelsDiff.vanishedParcels.push({id: parcel.id, reason: ParcelVanishReason.Decayed});
+                        parcelsDiff.vanishedParcels.push({id: parcel.id, reason: ParcelVanishReason.Decayed, carriedBy: parcel.carriedBy});
                         this.parcels.delete(parcel.id);
                     } else {
                         parcel.reward--;
@@ -199,39 +199,16 @@ class Belief {
         for (const sensedAgent of sensedAgents) {
             const existingAgent = this.agents.get(sensedAgent.id);
             if (existingAgent) {
-                let previousPosition = existingAgent.position;
+                const previousPosition = existingAgent.position;
                 existingAgent.update(sensedAgent);
-                let currentPosition = existingAgent.position;
+                const currentPosition = existingAgent.position;
 
-                // If agent changed position
                 if (!positionsEqual(previousPosition, currentPosition)) {
-                    let previousTile = this.map.grid[previousPosition.x][previousPosition.y];
-                    let currentTile = this.map.grid[currentPosition.x][currentPosition.y];
-
-                    if (currentTile.isParcelDelivery) {
-                        diff.enteredDeliveryTileIds.push(sensedAgent.id);
-                    }
-                    if (previousTile.isParcelDelivery) {
-                        diff.exitedDeliveryTileIds.push(sensedAgent.id);
-                    }
-
-                    // Entered or exited a tile with an uncarried parcel on it (i.e. actually available for
-                    // pickup - a carried parcel's position just tracks its carrier, it isn't sitting there).
-                    const wasOnParcelTile = [...this.parcels.values()].some((parcel) => parcel.carriedBy === null && positionsEqual(parcel.position, previousPosition));
-                    const isOnParcelTile = [...this.parcels.values()].some((parcel) => parcel.carriedBy === null && positionsEqual(parcel.position, currentPosition));
-                    if (isOnParcelTile) {
-                        diff.enteredParcelTileIds.push(sensedAgent.id);
-                    }
-                    if (wasOnParcelTile) {
-                        diff.exitedParcelTileIds.push(sensedAgent.id);
-                    }
+                    diff.moved.push({agentId: sensedAgent.id, from: previousPosition, to: currentPosition});
                 }
             } else {
                 this.agents.set(sensedAgent.id, sensedAgent);
-
-                if (this.map.grid[sensedAgent.position.x][sensedAgent.position.y].isParcelDelivery) {
-                    diff.enteredDeliveryTileIds.push(sensedAgent.id);
-                }
+                diff.moved.push({agentId: sensedAgent.id, from: null, to: sensedAgent.position});
             }
         }
 
@@ -248,7 +225,7 @@ class Belief {
 
             const existingCrate = this.crates.get(sensedCrate.id);
             if (existingCrate && !positionsEqual(existingCrate.position, sensedCrate.position)) {
-                diff.movedCrateIds.push(sensedCrate.id);
+                diff.moved.push({crateId: sensedCrate.id, from: existingCrate.position, to: sensedCrate.position});
             }
 
             // This step is used to confirm the existence of never observed crates that were seeded from the map's crate spawner tiles.
@@ -291,7 +268,7 @@ class Belief {
         // Remove stale parcels believed to exist in the current observing area, but that are no more present.
         this.parcels.forEach((believedParcel: Parcel) => {
             if (this._isInsideObservingArea(believedParcel.position) && !sensedParcels.some((p) => p.id === believedParcel.id)) {
-                diff.vanishedParcels.push({id: believedParcel.id, reason: ParcelVanishReason.Unobserved});
+                diff.vanishedParcels.push({id: believedParcel.id, reason: ParcelVanishReason.Unobserved, carriedBy: believedParcel.carriedBy});
                 this.parcels.delete(believedParcel.id);
             }
         })

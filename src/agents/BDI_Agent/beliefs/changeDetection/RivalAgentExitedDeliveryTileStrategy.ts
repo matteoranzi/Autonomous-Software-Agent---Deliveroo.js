@@ -1,11 +1,11 @@
 import {DeliberationContext, IChangeDetectionStrategy, StrategyResult} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
+import {AgentTileTransitionEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/AgentTileTransitionEstimator";
 
 class RivalAgentExitedDeliveryTileStrategy implements IChangeDetectionStrategy {
     readonly name = 'RivalExitedDeliveryTile';
 
     evaluate(context: DeliberationContext): StrategyResult {
-        const triggered = context.agents.exitedDeliveryTileIds.length > 0;
-        return {triggered, degree: triggered ? 1 : 0};
+        return context.facts.get(AgentTileTransitionEstimator.EXITED_DELIVERY_TILE) ?? {triggered: false, degree: 0};
     }
 }
 

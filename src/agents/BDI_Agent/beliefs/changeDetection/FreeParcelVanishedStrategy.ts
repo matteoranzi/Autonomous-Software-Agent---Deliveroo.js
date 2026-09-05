@@ -4,15 +4,7 @@ class FreeParcelVanishedStrategy implements IChangeDetectionStrategy {
     readonly name = 'FreeParcelVanished';
 
     evaluate(context: DeliberationContext): StrategyResult {
-        let triggered: boolean = false;
-        context.parcels.vanishedParcels.some((parcelId) => {
-            let parcel = context.belief.parcels.get(parcelId.id);
-            if (parcel && parcel.carriedBy === null) {
-                triggered = true;
-                return true;
-            }
-        });
-
+        let triggered: boolean = context.parcels.vanishedParcels.length > 0;
         return {triggered, degree: triggered ? 1 : 0};
     }
 }

@@ -4,7 +4,7 @@ class CrateMovedStrategy implements IChangeDetectionStrategy {
     readonly name: string = "CrateMoved";
 
     evaluate(context: DeliberationContext): StrategyResult {
-        const triggered = context.crates.movedCrateIds.length > 0 || context.crates.discardedSeedPositions.length > 0;
+        const triggered = context.crates.moved.length > 0 || context.crates.discardedSeedPositions.length > 0;
         return {triggered, degree: triggered ? 1 : 0};
     }
 }

@@ -11,28 +11,20 @@ enum ParcelVanishReason {
 type ParcelsDiff = {
     newParcelIds: string[];
     carriedByChangedIds: string[];
-    vanishedParcels: { id: string; reason: ParcelVanishReason }[];
+    vanishedParcels: { id: string; reason: ParcelVanishReason , carriedBy: string }[];
 };
 
 // Plain factual diff produced by Belief.updateAgents.
 type AgentsDiff = {
-    // Agent ids that (this cycle) entered or exited a delivery tile.
-    enteredDeliveryTileIds: string[];
-    exitedDeliveryTileIds: string[];
-
-    // Agent ids that (this cycle) entered or exited a tile currently believed to have a parcel on it.
-    enteredParcelTileIds: string[];
-    exitedParcelTileIds: string[];
+    // from is null for an agent tracked for the first time this cycle.
+    moved: { agentId: string; from: Position | null; to: Position }[];
 };
 
 // Plain factual diff produced by Belief.updateCrates.
 type CratesDiff = {
-    // Crate ids whose position changed (this cycle)
-    movedCrateIds: string[];
+    moved: { crateId: string; from: Position; to: Position }[];
 
-    // Positions of unconfirmed seed guesses (crates never actually observed, only inferred from
-    // the map's crate-spawner tiles) discarded this cycle because sensing observed the position
-    // and found no crate there. Identified by position, not id, since a seed has no real id.
+    // Positions of unconfirmed seed guesses discarded this cycle (identified by position, since a seed has no real id).
     discardedSeedPositions: Position[];
 }
 
@@ -41,11 +33,11 @@ function emptyParcelsDiff(): ParcelsDiff {
 }
 
 function emptyAgentsDiff(): AgentsDiff {
-    return {enteredDeliveryTileIds: [], exitedDeliveryTileIds: [], enteredParcelTileIds: [], exitedParcelTileIds: []};
+    return {moved: []};
 }
 
 function emptyCratesDiff(): CratesDiff {
-    return {movedCrateIds: [], discardedSeedPositions: []};
+    return {moved: [], discardedSeedPositions: []};
 }
 
 // A strategy's own output: did it fire, and how strongly/reliably.
@@ -79,8 +71,12 @@ interface IChangeDetectionStrategy {
     evaluate(context: DeliberationContext): StrategyResult;
 }
 
+// Same contract as IChangeDetectionStrategy - distinct name so the builder can run all estimators before other strategies.
+interface IChangeDetectionEstimator extends IChangeDetectionStrategy {}
+
 export {
     IChangeDetectionStrategy,
+    IChangeDetectionEstimator,
     DeliberationContext,
     StrategyResult,
     TriggeredStrategyResult,

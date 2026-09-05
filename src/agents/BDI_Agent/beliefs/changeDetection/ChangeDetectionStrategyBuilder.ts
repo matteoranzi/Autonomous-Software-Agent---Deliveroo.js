@@ -1,4 +1,4 @@
-import {IChangeDetectionStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
+import {IChangeDetectionEstimator, IChangeDetectionStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
 import {NewParcelAppearedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/NewParcelAppearedStrategy";
 import {RivalAgentPickedUpParcelStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentPickedUpParcelStrategy";
 import {RivalAgentDroppedParcelStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentDroppedParcelStrategy";
@@ -8,9 +8,22 @@ import {RivalAgentEnteredParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/ch
 import {RivalAgentExitedDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentExitedDeliveryTileStrategy";
 import {RivalAgentExitedParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentExitedParcelTileStrategy";
 import {CrateMovedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/CrateMovedStrategy";
+import {AgentTileTransitionEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/AgentTileTransitionEstimator";
+import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/ParcelCarriedByEstimator";
 
 class ChangeDetectionStrategyBuilder {
+    private readonly estimators: IChangeDetectionEstimator[] = [];
     private readonly strategies: IChangeDetectionStrategy[] = [];
+
+    withAgentTileTransitionEstimator(): this {
+        this.estimators.push(new AgentTileTransitionEstimator());
+        return this;
+    }
+
+    withParcelCarriedByEstimator(): this {
+        this.estimators.push(new ParcelCarriedByEstimator());
+        return this;
+    }
 
     withNewParcelAppeared(): this {
         this.strategies.push(new NewParcelAppearedStrategy());
@@ -57,7 +70,12 @@ class ChangeDetectionStrategyBuilder {
         return this;
     }
 
-    // Escape hatch for any custom strategy without the builder needing to know about it ahead of time.
+    // Escape hatches for custom estimators/strategies without the builder needing to know about them ahead of time.
+    withEstimator(estimator: IChangeDetectionEstimator): this {
+        this.estimators.push(estimator);
+        return this;
+    }
+
     with(strategy: IChangeDetectionStrategy): this {
         this.strategies.push(strategy);
         return this;
@@ -65,6 +83,8 @@ class ChangeDetectionStrategyBuilder {
 
     withDefaults(): this {
         return this
+            .withAgentTileTransitionEstimator()
+            .withParcelCarriedByEstimator()
             .withNewParcelAppeared()
             .withRivalAgentPickedUpParcel()
             .withRivalAgentDroppedParcel()
@@ -76,8 +96,9 @@ class ChangeDetectionStrategyBuilder {
             .withCrateMoved();
     }
 
+    // Estimators always precede strategies, regardless of with*() call order.
     build(): IChangeDetectionStrategy[] {
-        return [...this.strategies]; // defensive copy: callers can't mutate the builder's internal list after the fact
+        return [...this.estimators, ...this.strategies];
     }
 }
 
