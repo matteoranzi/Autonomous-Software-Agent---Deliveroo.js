@@ -4,6 +4,7 @@ import {ParcelCarriedByChangedStrategy} from "@/agents/BDI_Agent/beliefs/changeD
 import {BelievedParcelVanishedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/BelievedParcelVanishedStrategy";
 import {RivalEnteredDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalEnteredDeliveryTileStrategy";
 import {RivalEnteredParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalEnteredParcelTileStrategy";
+import {CrateMovedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/CrateMovedStrategy";
 
 class ChangeDetectionStrategyBuilder {
     private readonly strategies: IChangeDetectionStrategy[] = [];
@@ -33,6 +34,11 @@ class ChangeDetectionStrategyBuilder {
         return this;
     }
 
+    withCrateMoved(): this {
+        this.strategies.push(new CrateMovedStrategy());
+        return this;
+    }
+
     // Escape hatch for any custom strategy without the builder needing to know about it ahead of time.
     with(strategy: IChangeDetectionStrategy): this {
         this.strategies.push(strategy);
@@ -45,7 +51,8 @@ class ChangeDetectionStrategyBuilder {
             .withParcelCarriedByChanged()
             .withBelievedParcelVanished()
             .withRivalEnteredDeliveryTile()
-            .withRivalEnteredParcelTile();
+            .withRivalEnteredParcelTile()
+            .withCrateMoved();
     }
 
     build(): IChangeDetectionStrategy[] {
