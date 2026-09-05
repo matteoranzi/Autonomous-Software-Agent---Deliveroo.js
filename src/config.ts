@@ -1,5 +1,5 @@
 //TODO handle multiple config values for multi-agent scenarios
-type AppConfig = {
+type AgentConfig = {
     host: string;
     token: string;
 
@@ -17,7 +17,7 @@ function requireEnv(name: string): string {
     return value;
 }
 
-const appConfig: AppConfig = {
+const agentConfig: AgentConfig = {
     host: requireEnv('HOST'),
     token: requireEnv('TOKEN'),
 
@@ -29,6 +29,6 @@ const appConfig: AppConfig = {
 }
 
 export {
-    appConfig,
-    AppConfig,
+    agentConfig,
+    AgentConfig,
 }

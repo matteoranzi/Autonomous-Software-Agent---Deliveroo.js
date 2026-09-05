@@ -78,7 +78,7 @@ class Belief {
         this._beliefEvents = new TypedBeliefEmitter();
         this._changeDetectionRunner = new ChangeDetectionRunner(strategies);
 
-        this._setupGameMap(gameMap)
+        this._setupGameMap(gameMap);
     }
 
     private _setupGameMap(gameMap: GameMap): void {
@@ -127,10 +127,6 @@ class Belief {
         }, this.gameConfig.clock);
 
         this._seedCratesFromMap();
-
-        // Initial readiness signal, not a detected change - nothing to attribute to a
-        // strategy, so this bypasses _evaluateChangeStrategies and emits directly.
-        this._emitRelevantChangesForDesires([]);
     }
 
     // Seed crates from the map's crate spawner tiles. These are unconfirmed guesses that will be promoted to confirmed crates once observed.
@@ -149,13 +145,25 @@ class Belief {
     }
 
     updateMe(me: Agent): void {
+        let previousPosition = this.me.position;
         this.me.update(me);
+        let currentPosition = this.me.position;
+
+        if (!positionsEqual(previousPosition, currentPosition)) {
+            this._evaluateChangeStrategies({
+                belief: this,
+                parcels: emptyParcelsDiff(),
+                agents: {moved: [{agentId: this.me.id, from: previousPosition, to: currentPosition}]},
+                crates: emptyCratesDiff(),
+                facts: new Map(),
+            });
+        }
     }
 
     private _updateLastObservedTiles(): void {
         this.map.grid.forEach((column, x) => {
             column.forEach((tile, y) => {
-                if (this._isInsideObservingArea({x, y})) {
+                if (this.isInsideObservingArea({x, y})) {
                     tile.lastTimeObserved = Date.now();
                 }
             });
@@ -164,23 +172,23 @@ class Belief {
 
     private _updateLastObservedDynamicBeliefs(): void {
         this.parcels.forEach((parcel) => {
-            if (this._isInsideObservingArea(parcel.position)) {
+            if (this.isInsideObservingArea(parcel.position)) {
                 parcel.lastTimeObserved = Date.now();
             }
         });
         this.agents.forEach((agent) => {
-            if (this._isInsideObservingArea(agent.position)) {
+            if (this.isInsideObservingArea(agent.position)) {
                 agent.lastTimeObserved = Date.now();
             }
         });
         this.crates.forEach((crate) => {
-            if (this._isInsideObservingArea(crate.position)) {
+            if (this.isInsideObservingArea(crate.position)) {
                 crate.lastTimeObserved = Date.now();
             }
         });
     }
 
-    updateBeliefs(dynamicBelief: DynamicBelief): void {
+    updateDynamicBeliefs(dynamicBelief: DynamicBelief): void {
         const parcelsDiff = this.updateParcels(dynamicBelief.parcels);
         const agentsDiff = this.updateAgents(dynamicBelief.agents);
         const cratesDiff = this.updateCrates(dynamicBelief.crates);
@@ -240,7 +248,7 @@ class Belief {
         // before we arrived and the guess is simply wrong.
         this.crates.forEach((believedCrate: Crate, key: string) => {
             if (believedCrate.id === null
-                && this._isInsideObservingArea(believedCrate.position)
+                && this.isInsideObservingArea(believedCrate.position)
                 && !sensedCrates.some((c) => positionsEqual(c.position, believedCrate.position)))
             {
                 diff.discardedSeedPositions.push(believedCrate.position);
@@ -268,7 +276,7 @@ class Belief {
 
         // Remove stale parcels believed to exist in the current observing area, but that are no more present.
         this.parcels.forEach((believedParcel: Parcel) => {
-            if (this._isInsideObservingArea(believedParcel.position) && !sensedParcels.some((p) => p.id === believedParcel.id)) {
+            if (this.isInsideObservingArea(believedParcel.position) && !sensedParcels.some((p) => p.id === believedParcel.id)) {
                 diff.vanishedParcels.push({id: believedParcel.id, reason: ParcelVanishReason.Unobserved, carriedBy: believedParcel.carriedBy});
                 this.parcels.delete(believedParcel.id);
             }
@@ -283,20 +291,22 @@ class Belief {
     //  - crowding of surroundings
     //  ---> not a boolean value but a Fuzzy Logic score
     isPositionCurrentlyWalkable(position: Position): boolean {
-        // A tile is blocked if it is outside the map, if the terrain itself isn't walkable,
-        // or if it is currently occupied by a crate or another agent.
+        // Check if the position is within the bounds of the map
         if (position.x < 0 || position.x >= this.map.width || position.y < 0 || position.y >= this.map.height) {
             return false;
         }
 
+        // Check if the terrain itself is walkable
         if (!this.map.grid[position.x][position.y].isWalkable) {
             return false;
         }
 
+        // Check if any other agent is currently occupying the position
         if ([...this.agents.values()].some((agent) => agent.id !== this.me.id && positionsEqual(agent.position, position))) {
             return false;
         }
 
+        // Check if any crate is currently occupying the position
         if ([...this.crates.values()].some((crate) => positionsEqual(crate.position, position))) {
             return false;
         }
@@ -308,7 +318,7 @@ class Belief {
         return ([...this.parcels.values()].some((parcel) => parcel.carriedBy === agentId));
     }
 
-    private _isInsideObservingArea = (position: Position): boolean => {
+    isInsideObservingArea = (position: Position): boolean => {
         return Math.abs(this.me.position.x - position.x) + Math.abs(this.me.position.y - position.y) <= this.gameConfig.agent.observation_distance
     }
 

@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import {appConfig} from './config'
+import {agentConfig} from './config'
 import readline from 'readline';
 
 import {BDI_Agent} from "@/agents/BDI_Agent/BDI_Agent";
@@ -11,11 +11,11 @@ main().then(r => console.log("Application started")).catch(err => {
 });
 
 async function main() {
-    let bdi_agent: BDI_Agent = new BDI_Agent(appConfig);
+    let bdi_agent: BDI_Agent = new BDI_Agent(agentConfig);
     await bdi_agent.waitUntilReady();
 
     // *** TERMINAL UI ***
-    if(appConfig.enableTerminalUI) {
+    if(agentConfig.enableTerminalUI) {
         setupTerminalUI(bdi_agent);
     }
 }

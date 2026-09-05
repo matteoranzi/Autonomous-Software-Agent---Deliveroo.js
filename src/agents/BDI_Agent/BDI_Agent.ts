@@ -4,7 +4,7 @@ import {adaptMapPayload} from "@/io/adapters/mapAdapter";
 import {adaptSelfSensingPayload, adaptSensingPayload} from "@/io/adapters/sensingAdapter";
 import {adaptConfigPayload} from "@/io/adapters/configAdapter";
 import {Agent} from "@/agents/BDI_Agent/beliefs/primitives/Agent";
-import {AppConfig, appConfig} from "@/config";
+import {AgentConfig} from "@/config";
 import {DesiresGenerator} from "@/agents/BDI_Agent/desires/DesiresGenerator";
 import {IPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/IPathFinder";
 import {AStarPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/AStarPathFinder";
@@ -17,7 +17,7 @@ import { DjsConnect } from "@matteoranzi/deliveroo-js-sdk/client";
 //  such exploration strategy in some scenarios should be preferred over pickup (e.g. in an area where there are directional tiles and so the agent will "look-ahead" and see if in other areas is there anything interesting)
 class BDI_Agent {
     private readonly _djsClient: DjsClientSocket;
-    private readonly _appConfig: AppConfig;
+    private readonly _appConfig: AgentConfig;
 
     private belief: Belief;
     private readonly _ready: Promise<void>;
@@ -28,9 +28,9 @@ class BDI_Agent {
 
     private pathFinder: IPathFinder
 
-    constructor(appConfig: AppConfig) {
-        this._djsClient = DjsConnect(appConfig.host, appConfig.token);
-        this._appConfig = appConfig;
+    constructor(config: AgentConfig) {
+        this._djsClient = DjsConnect(config.host, config.token);
+        this._appConfig = config;
 
         this._ready = this._initializeBDI_Agent().catch((err) => {
             console.error(err);
@@ -52,12 +52,23 @@ class BDI_Agent {
     private async _initializeDesire() {
         this.desiresGenerator = new DesiresGenerator(this.belief);
 
+        this.desiresGenerator.regenerate().filter()
+
+        // Backstop timer to ensure that desires are regenerated at least every second, even if no relevant changes are detected.
+        let desiresGenerationBackstopTimer: ReturnType<typeof setInterval> = setInterval(() => {
+            this.desiresGenerator.regenerate().filter()
+        }, 1000) // TODO make this configurable
+
+        // Listen for relevant changes in the belief and update the desires accordingly.
         this.belief.onRelevantChangesForDesires((results : TriggeredStrategyResult[]) => {
             this._lastTriggeredStrategyResults = results;
 
             // TODO: now that we have detected relevant changes, we should update the desires accordingly.
             //  For now, we will just clear the desires and generate new ones.
             this.desiresGenerator.regenerate().filter()
+
+            // Reset the backstop timer since we have detected relevant changes and updated the desires.
+            desiresGenerationBackstopTimer.refresh();
         });
     }
 
@@ -89,7 +100,7 @@ class BDI_Agent {
 
     private _wireSensingEvents(): void {
         this._djsClient.onSensing((sensing) => {
-            this.belief.updateBeliefs(adaptSensingPayload(sensing, this._appConfig.maxAgentHistoryPositions));
+            this.belief.updateDynamicBeliefs(adaptSensingPayload(sensing, this._appConfig.maxAgentHistoryPositions));
         })
 
         this._djsClient.onYou((you) => {

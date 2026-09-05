@@ -1,4 +1,5 @@
 import {DeliberationContext, IChangeDetectionEstimator, StrategyResult} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
+import {positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
 
 // Interprets raw agent position deltas into named facts read by other strategies.
 class AgentTileTransitionEstimator implements IChangeDetectionEstimator {
@@ -20,7 +21,7 @@ class AgentTileTransitionEstimator implements IChangeDetectionEstimator {
             .filter((parcel) => parcel.carriedBy === null)
             .map((parcel) => parcel.position);
         const hasUncarriedParcelAt = (position: {x: number; y: number}) =>
-            uncarriedParcelPositions.some((p) => p.x === position.x && p.y === position.y);
+            uncarriedParcelPositions.some((p) => positionsEqual(p, position));
 
         for (const {agentId, from, to} of context.agents.moved) {
             const toTile = context.belief.map.grid[to.x][to.y];

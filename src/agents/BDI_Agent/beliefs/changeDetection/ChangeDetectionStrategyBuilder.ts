@@ -8,6 +8,7 @@ import {RivalAgentEnteredParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/ch
 import {RivalAgentExitedDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/RivalAgentExitedDeliveryTileStrategy";
 import {RivalAgentExitedParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/RivalAgentExitedParcelTileStrategy";
 import {CrateMovedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/CrateMovedStrategy";
+import {SelfAgentMovedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/SelfAgentMovedStrategy";
 import {AgentTileTransitionEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/AgentTileTransitionEstimator";
 import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/ParcelCarriedByEstimator";
 
@@ -70,6 +71,11 @@ class ChangeDetectionStrategyBuilder {
         return this;
     }
 
+    withSelfAgentMoved(): this {
+        this.strategies.push(new SelfAgentMovedStrategy());
+        return this;
+    }
+
     // Escape hatches for custom estimators/strategies without the builder needing to know about them ahead of time.
     withEstimator(estimator: IChangeDetectionEstimator): this {
         this.estimators.push(estimator);
@@ -93,7 +99,8 @@ class ChangeDetectionStrategyBuilder {
             .withRivalExitedDeliveryTile()
             .withRivalEnteredParcelTile()
             .withRivalExitedParcelTile()
-            .withCrateMoved();
+            .withCrateMoved()
+            .withSelfAgentMoved();
     }
 
     // Estimators always precede strategies, regardless of with*() call order.
