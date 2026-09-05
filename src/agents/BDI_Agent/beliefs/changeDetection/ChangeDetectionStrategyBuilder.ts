@@ -1,9 +1,12 @@
 import {IChangeDetectionStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
 import {NewParcelAppearedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/NewParcelAppearedStrategy";
-import {ParcelCarriedByChangedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/ParcelCarriedByChangedStrategy";
-import {BelievedParcelVanishedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/BelievedParcelVanishedStrategy";
-import {RivalEnteredDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalEnteredDeliveryTileStrategy";
-import {RivalEnteredParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalEnteredParcelTileStrategy";
+import {RivalAgentPickedUpParcelStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentPickedUpParcelStrategy";
+import {RivalAgentDroppedParcelStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentDroppedParcelStrategy";
+import {FreeParcelVanishedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/FreeParcelVanishedStrategy";
+import {RivalAgentEnteredDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentEnteredDeliveryTileStrategy";
+import {RivalAgentEnteredParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentEnteredParcelTileStrategy";
+import {RivalAgentExitedDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentExitedDeliveryTileStrategy";
+import {RivalAgentExitedParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentExitedParcelTileStrategy";
 import {CrateMovedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/CrateMovedStrategy";
 
 class ChangeDetectionStrategyBuilder {
@@ -14,23 +17,38 @@ class ChangeDetectionStrategyBuilder {
         return this;
     }
 
-    withParcelCarriedByChanged(): this {
-        this.strategies.push(new ParcelCarriedByChangedStrategy());
+    withRivalAgentPickedUpParcel(): this {
+        this.strategies.push(new RivalAgentPickedUpParcelStrategy());
         return this;
     }
 
-    withBelievedParcelVanished(): this {
-        this.strategies.push(new BelievedParcelVanishedStrategy());
+    withRivalAgentDroppedParcel(): this {
+        this.strategies.push(new RivalAgentDroppedParcelStrategy());
+        return this;
+    }
+
+    withFreeParcelVanished(): this {
+        this.strategies.push(new FreeParcelVanishedStrategy());
         return this;
     }
 
     withRivalEnteredDeliveryTile(): this {
-        this.strategies.push(new RivalEnteredDeliveryTileStrategy());
+        this.strategies.push(new RivalAgentEnteredDeliveryTileStrategy());
+        return this;
+    }
+
+    withRivalExitedDeliveryTile(): this {
+        this.strategies.push(new RivalAgentExitedDeliveryTileStrategy());
         return this;
     }
 
     withRivalEnteredParcelTile(): this {
-        this.strategies.push(new RivalEnteredParcelTileStrategy());
+        this.strategies.push(new RivalAgentEnteredParcelTileStrategy());
+        return this;
+    }
+
+    withRivalExitedParcelTile(): this {
+        this.strategies.push(new RivalAgentExitedParcelTileStrategy());
         return this;
     }
 
@@ -48,10 +66,13 @@ class ChangeDetectionStrategyBuilder {
     withDefaults(): this {
         return this
             .withNewParcelAppeared()
-            .withParcelCarriedByChanged()
-            .withBelievedParcelVanished()
+            .withRivalAgentPickedUpParcel()
+            .withRivalAgentDroppedParcel()
+            .withFreeParcelVanished()
             .withRivalEnteredDeliveryTile()
+            .withRivalExitedDeliveryTile()
             .withRivalEnteredParcelTile()
+            .withRivalExitedParcelTile()
             .withCrateMoved();
     }
 

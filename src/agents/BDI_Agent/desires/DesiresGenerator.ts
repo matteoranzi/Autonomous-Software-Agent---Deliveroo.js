@@ -26,6 +26,11 @@ class DesiresGenerator {
         return this;
     }
 
+    regenerate(): DesiresGenerator {
+        this.desires = [];
+        return this.generate();
+    }
+
     filter(): DesiresGenerator {
         this.desires = this.desires.filter((desire) => desire.isValid());
         return this;

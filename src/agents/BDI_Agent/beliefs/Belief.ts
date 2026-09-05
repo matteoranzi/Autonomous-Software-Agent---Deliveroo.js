@@ -215,9 +215,10 @@ class Belief {
                         diff.exitedDeliveryTileIds.push(sensedAgent.id);
                     }
 
-                    // Entered or exited a tile containing a parcel (which could be picked up or dropped off)
-                    const wasOnParcelTile = [...this.parcels.values()].some((parcel) => positionsEqual(parcel.position, previousPosition));
-                    const isOnParcelTile = [...this.parcels.values()].some((parcel) => positionsEqual(parcel.position, currentPosition));
+                    // Entered or exited a tile with an uncarried parcel on it (i.e. actually available for
+                    // pickup - a carried parcel's position just tracks its carrier, it isn't sitting there).
+                    const wasOnParcelTile = [...this.parcels.values()].some((parcel) => parcel.carriedBy === null && positionsEqual(parcel.position, previousPosition));
+                    const isOnParcelTile = [...this.parcels.values()].some((parcel) => parcel.carriedBy === null && positionsEqual(parcel.position, currentPosition));
                     if (isOnParcelTile) {
                         diff.enteredParcelTileIds.push(sensedAgent.id);
                     }
@@ -489,14 +490,11 @@ class Belief {
         }
     }
 
-    // Fires whenever a belief change could affect the current set of desires (e.g. a parcel
-    // appearing or disappearing), so listeners know to regenerate their desire list. Carries
-    // every strategy that triggered this cycle (empty on the initial post-construction kickoff).
     onRelevantChangesForDesires(callback: (results: TriggeredStrategyResult[]) => void): void {
         this._beliefEvents.on('relevantChanges4Desires', callback);
     }
 
-    _emitRelevantChangesForDesires(results: TriggeredStrategyResult[]): void {
+    private _emitRelevantChangesForDesires(results: TriggeredStrategyResult[]): void {
         this._beliefEvents.emit('relevantChanges4Desires', results);
     }
 }

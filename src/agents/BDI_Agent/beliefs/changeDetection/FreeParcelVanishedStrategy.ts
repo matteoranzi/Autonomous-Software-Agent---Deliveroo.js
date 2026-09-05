@@ -1,12 +1,12 @@
 import {DeliberationContext, IChangeDetectionStrategy, StrategyResult} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
 
-class NewParcelAppearedStrategy implements IChangeDetectionStrategy {
-    readonly name = 'NewParcelAppeared';
+class FreeParcelVanishedStrategy implements IChangeDetectionStrategy {
+    readonly name = 'FreeParcelVanished';
 
     evaluate(context: DeliberationContext): StrategyResult {
         let triggered: boolean = false;
-        context.parcels.newParcelIds.some((parcelId) => {
-            let parcel = context.belief.parcels.get(parcelId);
+        context.parcels.vanishedParcels.some((parcelId) => {
+            let parcel = context.belief.parcels.get(parcelId.id);
             if (parcel && parcel.carriedBy === null) {
                 triggered = true;
                 return true;
@@ -17,4 +17,4 @@ class NewParcelAppearedStrategy implements IChangeDetectionStrategy {
     }
 }
 
-export {NewParcelAppearedStrategy};
+export {FreeParcelVanishedStrategy};
