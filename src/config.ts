@@ -17,7 +17,7 @@ function requireEnv(name: string): string {
     return value;
 }
 
-const config: AppConfig = {
+const appConfig: AppConfig = {
     host: requireEnv('HOST'),
     token: requireEnv('TOKEN'),
 
@@ -29,6 +29,6 @@ const config: AppConfig = {
 }
 
 export {
-    config,
+    appConfig,
     AppConfig,
 }

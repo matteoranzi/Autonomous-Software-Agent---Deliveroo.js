@@ -4,12 +4,14 @@ import {adaptMapPayload} from "@/io/adapters/mapAdapter";
 import {adaptSelfSensingPayload, adaptSensingPayload} from "@/io/adapters/sensingAdapter";
 import {adaptConfigPayload} from "@/io/adapters/configAdapter";
 import {Agent} from "@/agents/BDI_Agent/beliefs/primitives/Agent";
-import {AppConfig} from "@/config";
+import {AppConfig, appConfig} from "@/config";
 import {DesiresGenerator} from "@/agents/BDI_Agent/desires/DesiresGenerator";
 import {IPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/IPathFinder";
 import {AStarPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/AStarPathFinder";
 import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/changeDetection/ChangeDetectionStrategyBuilder";
 import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
+
+import { DjsConnect } from "@matteoranzi/deliveroo-js-sdk/client";
 
 // TODO: exploration strategy: find a tile that maximizes the number of unknown tiles in the sensing radius, and move towards it. If there are multiple such tiles, choose the closest one. If there are no such tiles, choose a random tile that is not a wall and is not occupied by another agent.
 //  such exploration strategy in some scenarios should be preferred over pickup (e.g. in an area where there are directional tiles and so the agent will "look-ahead" and see if in other areas is there anything interesting)
@@ -20,12 +22,14 @@ class BDI_Agent {
     private belief: Belief;
     private readonly _ready: Promise<void>;
 
+    private _lastTriggeredStrategyResults: TriggeredStrategyResult[] = [];
+
     private desiresGenerator: DesiresGenerator;
 
     private pathFinder: IPathFinder
 
-    constructor(djsClient: DjsClientSocket, appConfig: AppConfig) {
-        this._djsClient = djsClient;
+    constructor(appConfig: AppConfig) {
+        this._djsClient = DjsConnect(appConfig.host, appConfig.token);
         this._appConfig = appConfig;
 
         this._ready = this._initializeBDI_Agent().catch((err) => {
@@ -49,13 +53,7 @@ class BDI_Agent {
         this.desiresGenerator = new DesiresGenerator(this.belief);
 
         this.belief.onRelevantChangesForDesires((results : TriggeredStrategyResult[]) => {
-            console.log("\n================================");
-            console.log("Relevant changes for desires detected:");
-            for (const result of results) {
-                // if (result.name === "BelievedParcelVanished") {
-                // }
-                console.log(`- ${result.name} (degree: ${result.degree})`);
-            }
+            this._lastTriggeredStrategyResults = results;
 
             // TODO: now that we have detected relevant changes, we should update the desires accordingly.
             //  For now, we will just clear the desires and generate new ones.
@@ -139,7 +137,14 @@ class BDI_Agent {
                 bdi_agent_str += `  - ${desire.name} (goal: [INVALID])\n`;
             }
         }
+        bdi_agent_str += "\n\n*************************************************************\n\n";
+        bdi_agent_str += "*** LATEST TRIGGERED STRATEGIES ***\n\n";
+        for (const result of this._lastTriggeredStrategyResults) {
+            bdi_agent_str += `  - ${result.name} (degree: ${result.degree})\n`;
+        }
         return bdi_agent_str;
+
+
     }
 }
 

@@ -11,7 +11,7 @@ enum ParcelVanishReason {
 type ParcelsDiff = {
     newParcelIds: string[];
     carriedByChangedIds: string[];
-    vanishedParcels: { id: string; reason: ParcelVanishReason , carriedBy: string }[];
+    vanishedParcels: { id: string; reason: ParcelVanishReason , carriedBy: string | null }[];
 };
 
 // Plain factual diff produced by Belief.updateAgents.

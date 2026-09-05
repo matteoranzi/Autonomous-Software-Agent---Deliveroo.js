@@ -1,15 +1,15 @@
 import {IChangeDetectionEstimator, IChangeDetectionStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
-import {NewParcelAppearedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/NewParcelAppearedStrategy";
-import {RivalAgentPickedUpParcelStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentPickedUpParcelStrategy";
-import {RivalAgentDroppedParcelStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentDroppedParcelStrategy";
-import {FreeParcelVanishedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/FreeParcelVanishedStrategy";
-import {RivalAgentEnteredDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentEnteredDeliveryTileStrategy";
-import {RivalAgentEnteredParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentEnteredParcelTileStrategy";
-import {RivalAgentExitedDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentExitedDeliveryTileStrategy";
-import {RivalAgentExitedParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/RivalAgentExitedParcelTileStrategy";
-import {CrateMovedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/CrateMovedStrategy";
-import {AgentTileTransitionEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/AgentTileTransitionEstimator";
-import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/ParcelCarriedByEstimator";
+import {NewParcelAppearedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/NewParcelAppearedStrategy";
+import {RivalAgentPickedUpParcelStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/RivalAgentPickedUpParcelStrategy";
+import {RivalAgentDroppedParcelStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/RivalAgentDroppedParcelStrategy";
+import {FreeParcelVanishedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/FreeParcelVanishedStrategy";
+import {RivalAgentEnteredDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/RivalAgentEnteredDeliveryTileStrategy";
+import {RivalAgentEnteredParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/RivalAgentEnteredParcelTileStrategy";
+import {RivalAgentExitedDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/RivalAgentExitedDeliveryTileStrategy";
+import {RivalAgentExitedParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/RivalAgentExitedParcelTileStrategy";
+import {CrateMovedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/CrateMovedStrategy";
+import {AgentTileTransitionEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/AgentTileTransitionEstimator";
+import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/ParcelCarriedByEstimator";
 
 class ChangeDetectionStrategyBuilder {
     private readonly estimators: IChangeDetectionEstimator[] = [];
