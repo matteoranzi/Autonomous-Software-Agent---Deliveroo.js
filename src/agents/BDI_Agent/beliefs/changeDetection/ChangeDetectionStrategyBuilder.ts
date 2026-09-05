@@ -9,20 +9,20 @@ import {RivalAgentExitedDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/c
 import {RivalAgentExitedParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/RivalAgentExitedParcelTileStrategy";
 import {CrateMovedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/CrateMovedStrategy";
 import {SelfAgentMovedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/SelfAgentMovedStrategy";
-import {AgentTileTransitionEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/AgentTileTransitionEstimator";
-import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/ParcelCarriedByEstimator";
+import {RivalAgentTileTransitionEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/RivalAgentTileTransitionEstimator";
+import {ParcelCarriedByRivalAgentEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/ParcelCarriedByRivalAgentEstimator";
 
 class ChangeDetectionStrategyBuilder {
     private readonly estimators: IChangeDetectionEstimator[] = [];
     private readonly strategies: IChangeDetectionStrategy[] = [];
 
     withAgentTileTransitionEstimator(): this {
-        this.estimators.push(new AgentTileTransitionEstimator());
+        this.estimators.push(new RivalAgentTileTransitionEstimator());
         return this;
     }
 
     withParcelCarriedByEstimator(): this {
-        this.estimators.push(new ParcelCarriedByEstimator());
+        this.estimators.push(new ParcelCarriedByRivalAgentEstimator());
         return this;
     }
 

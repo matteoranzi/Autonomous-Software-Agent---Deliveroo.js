@@ -2,7 +2,7 @@ import {DeliberationContext, IChangeDetectionEstimator, StrategyResult} from "@/
 import {positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
 
 // Interprets raw agent position deltas into named facts read by other strategies.
-class AgentTileTransitionEstimator implements IChangeDetectionEstimator {
+class RivalAgentTileTransitionEstimator implements IChangeDetectionEstimator {
     readonly name = 'AgentTileTransitionEstimator';
 
     static readonly ENTERED_DELIVERY_TILE = 'AgentEnteredDeliveryTile';
@@ -43,13 +43,13 @@ class AgentTileTransitionEstimator implements IChangeDetectionEstimator {
             }
         }
 
-        context.facts.set(AgentTileTransitionEstimator.ENTERED_DELIVERY_TILE, {triggered: enteredDelivery.length > 0, degree: enteredDelivery.length > 0 ? 1 : 0});
-        context.facts.set(AgentTileTransitionEstimator.EXITED_DELIVERY_TILE, {triggered: exitedDelivery.length > 0, degree: exitedDelivery.length > 0 ? 1 : 0});
-        context.facts.set(AgentTileTransitionEstimator.ENTERED_PARCEL_TILE, {triggered: enteredParcelTile.length > 0, degree: enteredParcelTile.length > 0 ? 1 : 0});
-        context.facts.set(AgentTileTransitionEstimator.EXITED_PARCEL_TILE, {triggered: exitedParcelTile.length > 0, degree: exitedParcelTile.length > 0 ? 1 : 0});
+        context.facts.set(RivalAgentTileTransitionEstimator.ENTERED_DELIVERY_TILE, {triggered: enteredDelivery.length > 0, degree: enteredDelivery.length > 0 ? 1 : 0});
+        context.facts.set(RivalAgentTileTransitionEstimator.EXITED_DELIVERY_TILE, {triggered: exitedDelivery.length > 0, degree: exitedDelivery.length > 0 ? 1 : 0});
+        context.facts.set(RivalAgentTileTransitionEstimator.ENTERED_PARCEL_TILE, {triggered: enteredParcelTile.length > 0, degree: enteredParcelTile.length > 0 ? 1 : 0});
+        context.facts.set(RivalAgentTileTransitionEstimator.EXITED_PARCEL_TILE, {triggered: exitedParcelTile.length > 0, degree: exitedParcelTile.length > 0 ? 1 : 0});
 
         return {triggered: false, degree: 0};
     }
 }
 
-export {AgentTileTransitionEstimator};
+export {RivalAgentTileTransitionEstimator};

@@ -20,7 +20,6 @@ class BDI_Agent {
     private readonly _appConfig: AgentConfig;
 
     private belief: Belief;
-    private readonly _ready: Promise<void>;
 
     private _lastTriggeredStrategyResults: TriggeredStrategyResult[] = [];
 
@@ -31,22 +30,23 @@ class BDI_Agent {
     constructor(config: AgentConfig) {
         this._djsClient = DjsConnect(config.host, config.token);
         this._appConfig = config;
+    }
 
-        this._ready = this._initializeBDI_Agent().catch((err) => {
+    async start(): Promise<void> {
+        let ready = this._initializeBDI_Agent().catch((err) => {
             console.error(err);
             process.exit(1);
         });
+
+        return ready;
     }
+
 
     private async _initializeBDI_Agent(): Promise<void> {
         await this._initializeBelief();
         await this._initializeDesire();
 
         this.pathFinder = new AStarPathFinder(this.belief);
-    }
-
-    waitUntilReady(): Promise<void> {
-        return this._ready;
     }
 
     private async _initializeDesire() {

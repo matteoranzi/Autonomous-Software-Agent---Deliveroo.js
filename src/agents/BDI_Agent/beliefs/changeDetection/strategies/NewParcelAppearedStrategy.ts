@@ -5,7 +5,7 @@ class NewParcelAppearedStrategy implements IChangeDetectionStrategy {
 
     evaluate(context: DeliberationContext): StrategyResult {
         let triggered: boolean = false;
-        context.parcels.newParcelIds.some((parcelId) => {
+        context.parcels.newIds.some((parcelId) => {
             let parcel = context.belief.parcels.get(parcelId);
             if (parcel && parcel.carriedBy === null) {
                 triggered = true;

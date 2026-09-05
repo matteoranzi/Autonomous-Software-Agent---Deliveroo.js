@@ -9,15 +9,19 @@ enum ParcelVanishReason {
 
 // Plain factual diff produced by Belief.updateParcels
 type ParcelsDiff = {
-    newParcelIds: string[];
-    carriedByChangedIds: string[];
-    vanishedParcels: { id: string; reason: ParcelVanishReason , carriedBy: string | null }[];
+    newIds: string[];
+    carriedByChanged: { id: string; from: string | null; to: string | null }[];
+    vanished: { id: string; reason: ParcelVanishReason , carriedBy: string | null }[];
 };
 
 // Plain factual diff produced by Belief.updateAgents.
 type AgentsDiff = {
     // from is null for an agent tracked for the first time this cycle.
     moved: { agentId: string; from: Position | null; to: Position }[];
+};
+
+type SelfAgentDiff = {
+    moved: { from: Position | null; to: Position }[];
 };
 
 // Plain factual diff produced by Belief.updateCrates.
@@ -29,7 +33,7 @@ type CratesDiff = {
 }
 
 function emptyParcelsDiff(): ParcelsDiff {
-    return {newParcelIds: [], carriedByChangedIds: [], vanishedParcels: []};
+    return {newIds: [], carriedByChanged: [], vanished: []};
 }
 
 function emptyAgentsDiff(): AgentsDiff {
@@ -38,6 +42,10 @@ function emptyAgentsDiff(): AgentsDiff {
 
 function emptyCratesDiff(): CratesDiff {
     return {moved: [], discardedSeedPositions: []};
+}
+
+function emptySelfAgentDiff(): SelfAgentDiff {
+    return {moved: []};
 }
 
 // A strategy's own output: did it fire, and how strongly/reliably.
@@ -60,6 +68,7 @@ type DeliberationContext = {
     belief: Belief;
     parcels: ParcelsDiff;
     agents: AgentsDiff;
+    selfAgent: SelfAgentDiff;
     crates: CratesDiff;
     facts: Map<string, StrategyResult>;
 };
@@ -86,5 +95,6 @@ export {
     ParcelVanishReason,
     emptyParcelsDiff,
     emptyAgentsDiff,
+    emptySelfAgentDiff,
     emptyCratesDiff,
 };

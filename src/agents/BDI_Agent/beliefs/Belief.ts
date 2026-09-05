@@ -8,7 +8,7 @@ import {
     AgentsDiff, CratesDiff,
     DeliberationContext,
     emptyAgentsDiff, emptyCratesDiff,
-    emptyParcelsDiff,
+    emptyParcelsDiff, emptySelfAgentDiff,
     IChangeDetectionStrategy,
     ParcelsDiff, ParcelVanishReason,
     TriggeredStrategyResult,
@@ -101,7 +101,7 @@ class Belief {
                 const parcelsDiff = emptyParcelsDiff();
                 for (const parcel of this.parcels.values()) {
                     if (parcel.reward < 1) {
-                        parcelsDiff.vanishedParcels.push({id: parcel.id, reason: ParcelVanishReason.Decayed, carriedBy: parcel.carriedBy});
+                        parcelsDiff.vanished.push({id: parcel.id, reason: ParcelVanishReason.Decayed, carriedBy: parcel.carriedBy});
                         this.parcels.delete(parcel.id);
                     } else {
                         parcel.reward--;
@@ -112,6 +112,7 @@ class Belief {
                     belief: this,
                     parcels: parcelsDiff,
                     agents: emptyAgentsDiff(),
+                    selfAgent: emptySelfAgentDiff(),
                     crates: emptyCratesDiff(),
                     facts: new Map(),
                 });
@@ -153,7 +154,8 @@ class Belief {
             this._evaluateChangeStrategies({
                 belief: this,
                 parcels: emptyParcelsDiff(),
-                agents: {moved: [{agentId: this.me.id, from: previousPosition, to: currentPosition}]},
+                agents: emptyAgentsDiff(),
+                selfAgent: {moved: [{from: previousPosition, to: currentPosition}]},
                 crates: emptyCratesDiff(),
                 facts: new Map(),
             });
@@ -196,6 +198,7 @@ class Belief {
         this._evaluateChangeStrategies({
             belief: this,
             parcels: parcelsDiff,
+            selfAgent: emptySelfAgentDiff(),
             agents: agentsDiff,
             crates: cratesDiff,
             facts: new Map(),
@@ -265,9 +268,9 @@ class Belief {
         for (const sensedParcel of sensedParcels) {
             let parcel = this.parcels.get(sensedParcel.id);
             if (!parcel) {
-                diff.newParcelIds.push(sensedParcel.id);
+                diff.newIds.push(sensedParcel.id);
             } else if (parcel.carriedBy !== sensedParcel.carriedBy) {
-                diff.carriedByChangedIds.push(sensedParcel.id);
+                diff.carriedByChanged.push({id: sensedParcel.id, from: parcel.carriedBy, to: sensedParcel.carriedBy});
             }
 
             this.parcels.set(sensedParcel.id, sensedParcel);
@@ -277,7 +280,7 @@ class Belief {
         // Remove stale parcels believed to exist in the current observing area, but that are no more present.
         this.parcels.forEach((believedParcel: Parcel) => {
             if (this.isInsideObservingArea(believedParcel.position) && !sensedParcels.some((p) => p.id === believedParcel.id)) {
-                diff.vanishedParcels.push({id: believedParcel.id, reason: ParcelVanishReason.Unobserved, carriedBy: believedParcel.carriedBy});
+                diff.vanished.push({id: believedParcel.id, reason: ParcelVanishReason.Unobserved, carriedBy: believedParcel.carriedBy});
                 this.parcels.delete(believedParcel.id);
             }
         })

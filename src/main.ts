@@ -12,15 +12,18 @@ main().then(r => console.log("Application started")).catch(err => {
 
 async function main() {
     let bdi_agent: BDI_Agent = new BDI_Agent(agentConfig);
-    await bdi_agent.waitUntilReady();
 
-    // *** TERMINAL UI ***
-    if(agentConfig.enableTerminalUI) {
-        setupTerminalUI(bdi_agent);
-    }
+    let ready = bdi_agent.start();
+
+    ready.then(() => {
+        console.log("BDI Agent is ready");
+
+        // *** TERMINAL UI ***
+        if(agentConfig.enableTerminalUI) {
+            setupTerminalUI(bdi_agent);
+        }
+    });
 }
-
-
 
 //====================================================
 //  Terminal UI

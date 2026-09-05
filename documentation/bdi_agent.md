@@ -98,3 +98,45 @@ The agent surveys its current beliefs and existing intentions to generate a menu
 
 **TODO**
 > Currently, the agent doesn't take into consideration active intention while filtering desires
+
+# Intention
+* keep the current intention unless it's invalid, or clearly outclassed
+
+Intention (stateful - owns the actual deliberation process)
+
+Intention:                                                                                                                                                                                            
+strategy: IIntentionStrategy   // injected, swappable via constructor                                                                                                                             
+currentDesire: IDesire | null
+
+       deliberate(desires: IDesire[]): IDesire | null {                                                                                                                                                  
+           if (this.currentDesire?.isValid()) {                                                                                                                                                          
+               return this.currentDesire;   // single-minded commitment: don't even re-rank                                                                                                              
+           }                                                                                                                                                                                             
+           const ordered = this.strategy.select(desires);                                                                                                                                                
+           this.currentDesire = ordered[0] ?? null;                                                                                                                                                      
+           return this.currentDesire;                                                                                                                                                                    
+       }                                                                                                                                                                                                 
+
+This is genuine single-minded commitment (one of the three canonical BDI commitment                                                                                                                   
+strategies: **blind / single-minded / open-minded**) - the current desire is kept for as long as it's                                                                                                     
+still isValid() (still feasible), without even re-running the ranking while it holds. Only when                                                                                                       
+it's null or invalid does deliberate() fall through to re-ranking via the strategy. This is                                                                                                           
+simpler than open-minded commitment (which would also drop a still-valid intention if something                                                                                                       
+scores higher) and matches the "super simple" scope of this pass; open-minded reconsideration is                                                                                                      
+a natural, non-breaking future refinement of this same method, not needed now.
+
+Deliberate simplification, not an oversight: Intention only keeps the first element of                                                                                                                
+whatever ordered list its strategy returns - it does not retain the rest as a persistent queue to                                                                                                     
+work through across deliberation cycles. This is consistent with the earlier decision that                                                                                                            
+desires are fully regenerated fresh every cycle (no persistent buffer): holding a stale                                                                                                               
+multi-step MCTS plan across cycles would need its own re-validation logic (a rival grabbing                                                                                                           
+something mid-sequence invalidates the rest of that plan), which is future work, not part of this                                                                                                     
+"super simple" pass. The interface already returns the full ordering so Intention can be                                                                                                              
+upgraded later to consume more of it without a breaking interface change - it just doesn't do                                                                                                         
+that yet. 
+
+---
+
+# Planning
+* Caching PDDL plans (pathfinding between crates): snapshots of the frozen map and relative moves to perform to reach (partial) destinations. The cache is invalidated when the map changes (i.e, a rival agent moves a crate).
+  * Multiple cache version may exist, that need to be matched with the current map state.
