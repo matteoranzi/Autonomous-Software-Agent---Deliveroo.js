@@ -14,14 +14,10 @@ type ParcelsDiff = {
     vanished: { id: string; reason: ParcelVanishReason , carriedBy: string | null }[];
 };
 
-// Plain factual diff produced by Belief.updateAgents.
+// Plain factual diff produced by Belief.updateAgents/updateMe - covers self and rivals uniformly.
 type AgentsDiff = {
     // from is null for an agent tracked for the first time this cycle.
     moved: { agentId: string; from: Position | null; to: Position }[];
-};
-
-type SelfAgentDiff = {
-    moved: { from: Position | null; to: Position }[];
 };
 
 // Plain factual diff produced by Belief.updateCrates.
@@ -44,15 +40,12 @@ function emptyCratesDiff(): CratesDiff {
     return {moved: [], discardedSeedPositions: []};
 }
 
-function emptySelfAgentDiff(): SelfAgentDiff {
-    return {moved: []};
-}
-
 // A strategy's own output: did it fire, and how strongly/reliably.
-// Boolean strategies always emit degree 0 or 1;
+// agentIds is optional - which agents (self and/or rivals) caused the fact, if known.
 type StrategyResult = {
     triggered: boolean;
     degree: number; // 0..1
+    agentIds?: string[];
 };
 
 // A StrategyResult plus which strategy produced it
@@ -68,7 +61,6 @@ type DeliberationContext = {
     belief: Belief;
     parcels: ParcelsDiff;
     agents: AgentsDiff;
-    selfAgent: SelfAgentDiff;
     crates: CratesDiff;
     facts: Map<string, StrategyResult>;
 };
@@ -83,6 +75,18 @@ interface IChangeDetectionStrategy {
 // Same contract as IChangeDetectionStrategy - distinct name so the builder can run all estimators before other strategies.
 interface IChangeDetectionEstimator extends IChangeDetectionStrategy {}
 
+// Re-derives triggered/degree from a fact's agentIds, excluding one agent (e.g. self).
+function excludingAgent(result: StrategyResult, agentId: string): StrategyResult {
+    const agentIds = (result.agentIds ?? []).filter((id) => id !== agentId);
+    return {triggered: agentIds.length > 0, degree: agentIds.length > 0 ? 1 : 0, agentIds};
+}
+
+// Re-derives triggered/degree from a fact's agentIds, keeping only one agent (e.g. self).
+function onlyAgent(result: StrategyResult, agentId: string): StrategyResult {
+    const triggered = (result.agentIds ?? []).includes(agentId);
+    return {triggered, degree: triggered ? 1 : 0};
+}
+
 export {
     IChangeDetectionStrategy,
     IChangeDetectionEstimator,
@@ -95,6 +99,7 @@ export {
     ParcelVanishReason,
     emptyParcelsDiff,
     emptyAgentsDiff,
-    emptySelfAgentDiff,
     emptyCratesDiff,
+    excludingAgent,
+    onlyAgent,
 };

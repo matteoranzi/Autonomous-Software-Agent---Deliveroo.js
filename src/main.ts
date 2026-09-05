@@ -6,7 +6,7 @@ import {BDI_Agent} from "@/agents/BDI_Agent/BDI_Agent";
 
 
 
-main().then(r => console.log("Application started")).catch(err => {
+main().then(() => console.log("Application started")).catch(err => {
     console.error("Error starting the Application:", err);
 });
 

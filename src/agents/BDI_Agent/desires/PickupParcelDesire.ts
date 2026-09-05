@@ -1,6 +1,6 @@
 import {Goal, IDesire, IDesireEvaluation} from "./IDesire";
-import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
-import {manhattanDistance, positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
+import {Belief} from "@/agents/BDI_Agent/beliefs/Belief";
+import {positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
 
 class PickupParcelDesire implements IDesire {
     readonly name: string = "PickupParcelDesire";
@@ -18,7 +18,7 @@ class PickupParcelDesire implements IDesire {
     }
 
     estimateValue(): number {
-        throw new Error("PickupParcelDesire.estimateValue is not implemented yet");
+        return 1;
     }
 
     evaluateValue(): Promise<IDesireEvaluation> {

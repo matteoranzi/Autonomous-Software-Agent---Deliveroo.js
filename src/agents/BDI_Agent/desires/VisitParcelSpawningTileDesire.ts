@@ -15,7 +15,7 @@ class VisitParcelSpawningTileDesire implements IDesire{
     }
 
     estimateValue(): number {
-        throw new Error("VisitParcelSpawningTileDesire.estimateValue is not implemented yet");
+        return 0;
     }
 
     evaluateValue(): Promise<IDesireEvaluation> {

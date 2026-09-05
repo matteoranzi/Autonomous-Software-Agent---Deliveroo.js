@@ -13,7 +13,7 @@ class DeliverParcelDesire implements IDesire {
     }
 
     estimateValue(): number {
-        throw new Error("DeliverParcelDesire.estimateValue is not implemented yet");
+        return 2;
     }
 
     evaluateValue(): Promise<IDesireEvaluation> {

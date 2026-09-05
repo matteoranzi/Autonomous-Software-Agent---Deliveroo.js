@@ -8,7 +8,7 @@ import {
     AgentsDiff, CratesDiff,
     DeliberationContext,
     emptyAgentsDiff, emptyCratesDiff,
-    emptyParcelsDiff, emptySelfAgentDiff,
+    emptyParcelsDiff,
     IChangeDetectionStrategy,
     ParcelsDiff, ParcelVanishReason,
     TriggeredStrategyResult,
@@ -112,7 +112,6 @@ class Belief {
                     belief: this,
                     parcels: parcelsDiff,
                     agents: emptyAgentsDiff(),
-                    selfAgent: emptySelfAgentDiff(),
                     crates: emptyCratesDiff(),
                     facts: new Map(),
                 });
@@ -154,8 +153,7 @@ class Belief {
             this._evaluateChangeStrategies({
                 belief: this,
                 parcels: emptyParcelsDiff(),
-                agents: emptyAgentsDiff(),
-                selfAgent: {moved: [{from: previousPosition, to: currentPosition}]},
+                agents: {moved: [{agentId: this.me.id, from: previousPosition, to: currentPosition}]},
                 crates: emptyCratesDiff(),
                 facts: new Map(),
             });
@@ -198,7 +196,6 @@ class Belief {
         this._evaluateChangeStrategies({
             belief: this,
             parcels: parcelsDiff,
-            selfAgent: emptySelfAgentDiff(),
             agents: agentsDiff,
             crates: cratesDiff,
             facts: new Map(),

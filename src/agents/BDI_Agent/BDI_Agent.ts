@@ -10,6 +10,8 @@ import {IPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/IPathFinder";
 import {AStarPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/AStarPathFinder";
 import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/changeDetection/ChangeDetectionStrategyBuilder";
 import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
+import {Intention} from "@/agents/BDI_Agent/intentions/Intention";
+import {HighestScoreIntentionStrategy} from "@/agents/BDI_Agent/intentions/HighestScoreIntentionStrategy";
 
 import { DjsConnect } from "@matteoranzi/deliveroo-js-sdk/client";
 
@@ -24,6 +26,7 @@ class BDI_Agent {
     private _lastTriggeredStrategyResults: TriggeredStrategyResult[] = [];
 
     private desiresGenerator: DesiresGenerator;
+    private intention: Intention;
 
     private pathFinder: IPathFinder
 
@@ -44,20 +47,23 @@ class BDI_Agent {
 
     private async _initializeBDI_Agent(): Promise<void> {
         await this._initializeBelief();
-        await this._initializeDesire();
+        await this._initializeDesireAndIntention();
 
         this.pathFinder = new AStarPathFinder(this.belief);
     }
 
-    private async _initializeDesire() {
+    private async _initializeDesireAndIntention() {
         this.desiresGenerator = new DesiresGenerator(this.belief);
+        this.intention = new Intention(new HighestScoreIntentionStrategy());
 
         this.desiresGenerator.regenerate().filter()
+        this.intention.deliberate(this.desiresGenerator.desires);
 
         // Backstop timer to ensure that desires are regenerated at least every second, even if no relevant changes are detected.
         let desiresGenerationBackstopTimer: ReturnType<typeof setInterval> = setInterval(() => {
             this.desiresGenerator.regenerate().filter()
-        }, 1000) // TODO make this configurable
+            this.intention.deliberate(this.desiresGenerator.desires);
+        }, 10000) // TODO make this configurable
 
         // Listen for relevant changes in the belief and update the desires accordingly.
         this.belief.onRelevantChangesForDesires((results : TriggeredStrategyResult[]) => {
@@ -66,6 +72,7 @@ class BDI_Agent {
             // TODO: now that we have detected relevant changes, we should update the desires accordingly.
             //  For now, we will just clear the desires and generate new ones.
             this.desiresGenerator.regenerate().filter()
+            this.intention.deliberate(this.desiresGenerator.desires);
 
             // Reset the backstop timer since we have detected relevant changes and updated the desires.
             desiresGenerationBackstopTimer.refresh();
@@ -149,13 +156,25 @@ class BDI_Agent {
             }
         }
         bdi_agent_str += "\n\n*************************************************************\n\n";
-        bdi_agent_str += "*** LATEST TRIGGERED STRATEGIES ***\n\n";
+        bdi_agent_str += "*** LATEST TRIGGERED BELIEF CHANGED STRATEGIES ***\n\n";
         for (const result of this._lastTriggeredStrategyResults) {
             bdi_agent_str += `  - ${result.name} (degree: ${result.degree})\n`;
         }
+
+        bdi_agent_str += "\n\n*************************************************************\n\n";
+        bdi_agent_str += "*** INTENTION ***\n\n";
+        if (this.intention.currentDesire) {
+            if (this.intention.currentDesire.goal.valid) {
+                bdi_agent_str += `  - ${this.intention.currentDesire.name} (goal: ${this.intention.currentDesire.goal.position.x},${this.intention.currentDesire.goal.position.y})\n`;
+            } else {
+                bdi_agent_str += `  - ${this.intention.currentDesire.name} (goal: [INVALID])\n`;
+            }
+        } else {
+            bdi_agent_str += "  - [NO CURRENT INTENTION]\n";
+        }
+
+
         return bdi_agent_str;
-
-
     }
 }
 

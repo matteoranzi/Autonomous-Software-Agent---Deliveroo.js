@@ -102,6 +102,9 @@ The agent surveys its current beliefs and existing intentions to generate a menu
 # Intention
 * keep the current intention unless it's invalid, or clearly outclassed
 
+> Use game config information to perform more intelligent decision-making
+> (i.e, if the agent is carrying a parcel but knows many more parcel may spawn in the next few seconds, it may be better to wait there and pick them up instead of delivering the current one)
+
 Intention (stateful - owns the actual deliberation process)
 
 Intention:                                                                                                                                                                                            
@@ -140,3 +143,5 @@ that yet.
 # Planning
 * Caching PDDL plans (pathfinding between crates): snapshots of the frozen map and relative moves to perform to reach (partial) destinations. The cache is invalidated when the map changes (i.e, a rival agent moves a crate).
   * Multiple cache version may exist, that need to be matched with the current map state.
+
+Desire regeneration and deliberation are two sequential phases sharing the same trigger points — not two separate cycles.    

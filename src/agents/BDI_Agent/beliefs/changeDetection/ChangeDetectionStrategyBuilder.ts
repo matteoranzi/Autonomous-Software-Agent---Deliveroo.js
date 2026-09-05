@@ -9,20 +9,30 @@ import {RivalAgentExitedDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/c
 import {RivalAgentExitedParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/RivalAgentExitedParcelTileStrategy";
 import {CrateMovedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/CrateMovedStrategy";
 import {SelfAgentMovedStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/SelfAgentMovedStrategy";
-import {RivalAgentTileTransitionEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/RivalAgentTileTransitionEstimator";
-import {ParcelCarriedByRivalAgentEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/ParcelCarriedByRivalAgentEstimator";
+import {SelfAgentEnteredDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/SelfAgentEnteredDeliveryTileStrategy";
+import {SelfAgentExitedDeliveryTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/SelfAgentExitedDeliveryTileStrategy";
+import {SelfAgentEnteredParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/SelfAgentEnteredParcelTileStrategy";
+import {SelfAgentExitedParcelTileStrategy} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/SelfAgentExitedParcelTileStrategy";
+import {AgentTileTransitionEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/AgentTileTransitionEstimator";
+import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/ParcelCarriedByEstimator";
+import {
+    SelfAgentPickedUpParcelStrategy
+} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/SelfAgentPickedUpParcelStrategy";
+import {
+    SelfAgentDroppedParcelStrategy
+} from "@/agents/BDI_Agent/beliefs/changeDetection/strategies/SelfAgentDroppedParcelStrategy";
 
 class ChangeDetectionStrategyBuilder {
     private readonly estimators: IChangeDetectionEstimator[] = [];
     private readonly strategies: IChangeDetectionStrategy[] = [];
 
     withAgentTileTransitionEstimator(): this {
-        this.estimators.push(new RivalAgentTileTransitionEstimator());
+        this.estimators.push(new AgentTileTransitionEstimator());
         return this;
     }
 
     withParcelCarriedByEstimator(): this {
-        this.estimators.push(new ParcelCarriedByRivalAgentEstimator());
+        this.estimators.push(new ParcelCarriedByEstimator());
         return this;
     }
 
@@ -76,6 +86,36 @@ class ChangeDetectionStrategyBuilder {
         return this;
     }
 
+    withSelfEnteredDeliveryTile(): this {
+        this.strategies.push(new SelfAgentEnteredDeliveryTileStrategy());
+        return this;
+    }
+
+    withSelfExitedDeliveryTile(): this {
+        this.strategies.push(new SelfAgentExitedDeliveryTileStrategy());
+        return this;
+    }
+
+    withSelfEnteredParcelTile(): this {
+        this.strategies.push(new SelfAgentEnteredParcelTileStrategy());
+        return this;
+    }
+
+    withSelfExitedParcelTile(): this {
+        this.strategies.push(new SelfAgentExitedParcelTileStrategy());
+        return this;
+    }
+
+    withSelfPickedUpParcel(): this {
+        this.strategies.push(new SelfAgentPickedUpParcelStrategy());
+        return this;
+    }
+
+    withSelfDroppedParcel(): this {
+        this.strategies.push(new SelfAgentDroppedParcelStrategy());
+        return this;
+    }
+
     // Escape hatches for custom estimators/strategies without the builder needing to know about them ahead of time.
     withEstimator(estimator: IChangeDetectionEstimator): this {
         this.estimators.push(estimator);
@@ -100,7 +140,13 @@ class ChangeDetectionStrategyBuilder {
             .withRivalEnteredParcelTile()
             .withRivalExitedParcelTile()
             .withCrateMoved()
-            .withSelfAgentMoved();
+            .withSelfAgentMoved()
+            .withSelfEnteredDeliveryTile()
+            .withSelfExitedDeliveryTile()
+            .withSelfEnteredParcelTile()
+            .withSelfExitedParcelTile()
+            .withSelfPickedUpParcel()
+            .withSelfDroppedParcel();
     }
 
     // Estimators always precede strategies, regardless of with*() call order.
