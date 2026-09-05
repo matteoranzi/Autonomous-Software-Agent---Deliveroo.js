@@ -1,8 +1,7 @@
 import 'dotenv/config'
-import {config} from './config'
+import {appConfig} from './config'
 import readline from 'readline';
 
-import { DjsConnect } from "@matteoranzi/deliveroo-js-sdk/client";
 import {BDI_Agent} from "@/agents/BDI_Agent/BDI_Agent";
 
 
@@ -12,14 +11,15 @@ main().then(r => console.log("Application started")).catch(err => {
 });
 
 async function main() {
-    let bdi_agent: BDI_Agent = new BDI_Agent(DjsConnect(config.host, config.token), config);
+    let bdi_agent: BDI_Agent = new BDI_Agent(appConfig);
     await bdi_agent.waitUntilReady();
 
-    // // *** TERMINAL UI ***
-    if(config.enableTerminalUI) {
+    // *** TERMINAL UI ***
+    if(appConfig.enableTerminalUI) {
         setupTerminalUI(bdi_agent);
     }
 }
+
 
 
 //====================================================

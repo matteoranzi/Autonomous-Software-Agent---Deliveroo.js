@@ -14,6 +14,7 @@ import {
     TriggeredStrategyResult,
 } from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
 import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/changeDetection/ChangeDetectionStrategyBuilder";
+import {ChangeDetectionRunner} from "@/agents/BDI_Agent/beliefs/changeDetection/ChangeDetectionRunner";
 
 type GameMap = { width: number, height: number, grid: Tile[][] };
 type Position = { x: number, y: number };
@@ -61,7 +62,7 @@ class Belief {
     observationTimer: ReturnType<typeof setInterval> | null = null;
 
     private readonly _beliefEvents: TypedBeliefEmitter;
-    private readonly _changeDetectionStrategies: IChangeDetectionStrategy[];
+    private readonly _changeDetectionRunner: ChangeDetectionRunner;
 
     constructor(gameConfig: GameConfig, gameMap: GameMap, me: Agent, strategies: IChangeDetectionStrategy[] = new ChangeDetectionStrategyBuilder().withDefaults().build()) {
         this.gameConfig = gameConfig;
@@ -75,7 +76,7 @@ class Belief {
         this.parcelDeliveryTiles = new Array<Position>();
 
         this._beliefEvents = new TypedBeliefEmitter();
-        this._changeDetectionStrategies = strategies;
+        this._changeDetectionRunner = new ChangeDetectionRunner(strategies);
 
         this._setupGameMap(gameMap)
     }
@@ -445,23 +446,8 @@ class Belief {
     // Belief events
     // ============================================================================================
 
-    // Runs the registered change-detection strategies, in order, against this cycle's diff data.
-    // Each strategy's result is written into context.facts as a side effect (so a later
-    // strategy - e.g. a future fuzzy evaluator - can read an earlier one's output by name),
-    // then every strategy that reported triggered=true is emitted together on
-    // relevantChanges4Desires.
     private _evaluateChangeStrategies(context: DeliberationContext): void {
-        const triggeredResults: TriggeredStrategyResult[] = [];
-
-        for (const strategy of this._changeDetectionStrategies) {
-            const result = strategy.evaluate(context);
-            context.facts.set(strategy.name, result);
-
-            if (result.triggered) {
-                triggeredResults.push({name: strategy.name, ...result});
-            }
-        }
-
+        const triggeredResults = this._changeDetectionRunner.run(context);
         if (triggeredResults.length > 0) {
             this._emitRelevantChangesForDesires(triggeredResults);
         }

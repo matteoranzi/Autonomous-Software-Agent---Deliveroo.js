@@ -1,5 +1,5 @@
 import {DeliberationContext, IChangeDetectionStrategy, StrategyResult} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
-import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/ParcelCarriedByEstimator";
+import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/changeDetection/estimators/ParcelCarriedByEstimator";
 
 class RivalAgentDroppedParcelStrategy implements IChangeDetectionStrategy {
     readonly name = 'RivalAgentDroppedParcel';
