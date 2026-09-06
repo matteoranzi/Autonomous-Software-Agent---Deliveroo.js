@@ -22,12 +22,37 @@ class Intention {
 
     // TODO: Ingest commitment strategy (single-minded, multi-mind, etc.) and select a desire to commit to from the given desires.
     async deliberate(desires: IDesire[]): Promise<void> {
-        if (this.committedDesire?.isValid()) {
+        let newDesiredIntention: IDesire = (await this._strategy.select(desires))[0] ?? null;
+
+        if (!newDesiredIntention?.isValid()) {
             return;
         }
 
-        const selected = await this._strategy.select(desires);
-        this.committedDesire = selected[0] ?? null;
+        if (!this.committedDesire || !this.committedDesire.isValid()) {
+            this.committedDesire = newDesiredIntention;
+            return;
+        }
+
+        // If the new desired intention is the same kind of the committed desire,
+        // but with a highest utility, then switch to the new desired intention
+        if (newDesiredIntention?.name === this.committedDesire?.name
+            && desireIdentity(newDesiredIntention) !== desireIdentity(this.committedDesire)) { // Guard-checking it isn't the same desire, but a different one of the same kind
+
+            let newUtility = (await newDesiredIntention.evaluate()).utility;
+            let committedUtility = (await this.committedDesire.evaluate()).utility;
+
+            if (newUtility > committedUtility) {
+                console.log(`Switching to new desired intention: ${desireIdentity(newDesiredIntention)}[${newUtility}] with higher utility than committed desire: ${desireIdentity(this.committedDesire)}[${committedUtility}]`);
+                this.committedDesire = newDesiredIntention
+            }
+        }
+
+        // if (this.committedDesire?.isValid()) {
+        //     return;
+        // }
+        //
+        // const selected = await this._strategy.select(desires);
+        // this.committedDesire = selected[0] ?? null;
     }
 }
 

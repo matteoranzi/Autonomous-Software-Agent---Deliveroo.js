@@ -150,6 +150,8 @@ class Belief {
     }
 
     updateMe(me: Agent): void {
+        // Discard intermediate-steps
+
         let previousPosition = this.me.position;
         this.me.update(me);
         let currentPosition = this.me.position;

@@ -42,7 +42,7 @@ class PDDL_PathFinder implements IPathFinder {
                 maxTime: this.maxSolvingTimeS,
                 signal: controller.signal,
                 onImprovedPlan: (improvedPlan, metric) => {
-                    console.log(`[PDDL_PathFinder] Improved plan found with metric ${metric}, steps: ${improvedPlan.length}`);
+                    // console.log(`[PDDL_PathFinder] Improved plan found with metric ${metric}, steps: ${improvedPlan.length}`);
                     plan = improvedPlan;
                     controller.abort();
                 },

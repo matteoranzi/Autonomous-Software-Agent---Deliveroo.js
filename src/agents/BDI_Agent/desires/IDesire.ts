@@ -8,7 +8,8 @@ interface IDesire {
     readonly name: string;
     goal: Goal; // Where the Agent intends to head based on the info he had when he formed this desire
 
-    evaluation(): Promise<IDesireEvaluation>;
+    // get evaluation(): Promise<IDesireEvaluation>;
+    evaluate(): Promise<IDesireEvaluation>;
 
     // Returns true if the desire is still valid, false if it should be discarded
     isValid(): boolean;

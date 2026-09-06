@@ -5,7 +5,7 @@ import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {PredictivePlanner} from "@/agents/BDI_Agent/planning/PredictivePlanner";
 
 
-class ExploreParcelSpawningTileDesire implements IDesire{
+class ExploreParcelSpawningTileDesire implements IDesire {
     readonly name: string = "explore_parcel_spawning_tile";
 
     goal: Goal;
@@ -19,16 +19,16 @@ class ExploreParcelSpawningTileDesire implements IDesire{
         this.goal = {valid: true, position: parcelSpawnerTilePosition, finalAction: null};
     }
 
-    async evaluation(): Promise<IDesireEvaluation> {
-        if (this.evaluationCache) {
-            return this.evaluationCache;
-        }
+    // async evaluation(): Promise<IDesireEvaluation> {
+    //     if (this.evaluationCache) {
+    //         return this.evaluationCache;
+    //     }
+    //
+    //     this.evaluationCache = await this.evaluate();
+    //     return this.evaluationCache;
+    // }
 
-        this.evaluationCache = await this.evaluate();
-        return this.evaluationCache;
-    }
-
-    private async evaluate(): Promise<IDesireEvaluation> {
+    async evaluate(): Promise<IDesireEvaluation> {
         if (!this.goal.valid) {
             return {
                 utility: -Infinity,
@@ -74,7 +74,7 @@ class ExploreParcelSpawningTileDesire implements IDesire{
             return false;
         }
 
-        if(this.belief.isInsideObservingArea(this.goal.position)) {
+        if (this.belief.isInsideObservingArea(this.goal.position)) {
             this.goal = {valid: false};
             return false;
         }
@@ -84,4 +84,4 @@ class ExploreParcelSpawningTileDesire implements IDesire{
 
 }
 
-export { ExploreParcelSpawningTileDesire };
+export {ExploreParcelSpawningTileDesire};

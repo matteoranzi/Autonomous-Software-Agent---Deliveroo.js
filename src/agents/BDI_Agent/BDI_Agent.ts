@@ -50,6 +50,13 @@ class BDI_Agent {
     private planExecutor: PlanExecutor;
     private _executing = false;
     private _deliberating = false;
+    private _deliberationPending = false;
+    private _deliberationDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // Sibling belief events for the same server tick (onYou, onSensing) arrive as separate,
+    // uncoordinated socket messages - this gives them a short window to both land before
+    // deliberation reads belief state, instead of racing against a partially-updated belief.
+    private static readonly DELIBERATION_DEBOUNCE_MS = 50;
 
     constructor(config: AgentConfig) {
         this._djsClient = DjsConnect(config.host, config.token);
@@ -80,7 +87,7 @@ class BDI_Agent {
         ]);
         this.planExecutor = new PlanExecutor(
             this.planner,
-            () => new ReplanThenAbortFailedPlanStrategy(new RetryThenAbortFailedPlanStrategy(0), 2), // TODO make retry/replan limits configurable
+            () => new ReplanThenAbortFailedPlanStrategy(new RetryThenAbortFailedPlanStrategy(1), 2), // TODO make retry/replan limits configurable
             this.intention,
             (action) => this._emitAction(action),
             () => this.belief.me.position,
@@ -104,7 +111,7 @@ class BDI_Agent {
         });
 
         // Generate initial desires and deliberate on them.
-        this._deliberationCycle();
+        this._deliberationCycle().finally();
     }
 
     private async _deliberationCycle(): Promise<void> {
@@ -159,12 +166,25 @@ class BDI_Agent {
     }
 
     private _wireSensingEvents(): void {
+        // onSensing and onYou are separate, uncoordinated socket events - onSensing always
+        // applies immediately (never blocked waiting for a sibling); onYou never applies on its
+        // own, it just rides along with the next onSensing. EventEmitter.emit() is synchronous,
+        // so any belief-event listener (and the deliberation cycle it may schedule) only ever
+        // sees belief after both halves of a tick have landed together, with no timer needed.
+        let pendingYou: Agent | null = null;
+
         this._djsClient.onSensing((sensing) => {
+            if (pendingYou !== null) {
+                const you = pendingYou;
+                pendingYou = null;
+                this.belief.updateMe(you);
+            }
+
             this.belief.updateDynamicBeliefs(adaptSensingPayload(sensing, this._appConfig.maxAgentHistoryPositions));
         })
 
         this._djsClient.onYou((you) => {
-            this.belief.updateMe(adaptSelfSensingPayload(you, this._appConfig.maxAgentHistoryPositions));
+            pendingYou = adaptSelfSensingPayload(you, this._appConfig.maxAgentHistoryPositions);
         })
     }
 
@@ -236,6 +256,9 @@ class BDI_Agent {
         } else {
             bdi_agent_str += "  - [NO CURRENT INTENTION]\n";
         }
+
+        bdi_agent_str += "\n\n*************************************************************\n\n";
+        bdi_agent_str += `*** Deliberating: ${this._deliberating} ***\n\n`;
 
 
         return bdi_agent_str;

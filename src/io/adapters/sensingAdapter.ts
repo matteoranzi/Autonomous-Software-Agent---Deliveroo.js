@@ -5,6 +5,7 @@ import {DynamicBelief} from "@/agents/BDI_Agent/beliefs/Belief";
 import {Crate} from "@/agents/BDI_Agent/beliefs/primitives/Crate";
 
 export function adaptSensingPayload(sensing: IOSensing, maxAgentPositionsHistory: number): DynamicBelief {
+    // console.log('adaptSensingPayload: adapting sensing payload', sensing);
     return {
         // Agents with no known position aren't useful sensing data; skip rather than fabricate one.
         agents: sensing.agents
@@ -16,6 +17,7 @@ export function adaptSensingPayload(sensing: IOSensing, maxAgentPositionsHistory
 }
 
 export function adaptSelfSensingPayload(agent: IOAgent, maxAgentPositionsHistory: number): Agent {
+    // console.log('adaptSelfSensingPayload: adapting self sensing payload', agent);
     if (agent.x === undefined || agent.y === undefined) {
         throw new Error('adaptSelfSensingPayload: self agent has no known position');
     }

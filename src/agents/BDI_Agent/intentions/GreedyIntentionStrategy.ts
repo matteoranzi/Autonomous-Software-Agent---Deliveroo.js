@@ -38,7 +38,7 @@ class GreedyIntentionStrategy implements IIntentionStrategy {
 
         // Helper function to find the desire with the highest utility in a given bucket.
         const best = async (bucket: IDesire[]): Promise<IDesire> => {
-            const scored = await Promise.all(bucket.map(async (desire: IDesire) => ({desire, value: (await desire.evaluation()).utility})));
+            const scored = await Promise.all(bucket.map(async (desire: IDesire) => ({desire, value: (await desire.evaluate()).utility})));
             return scored.reduce((top, current) => current.value > top.value ? current : top).desire;
         };
 

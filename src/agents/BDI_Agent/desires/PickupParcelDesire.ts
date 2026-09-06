@@ -19,19 +19,23 @@ class PickupParcelDesire implements IDesire {
         this.belief = belief;
         let parcel = this.belief.parcels.get(this.parcelId);
 
-        this.goal = parcel ? {valid: true, position: parcel.position, finalAction: AgentActions.PICKUP} : {valid: false};
+        this.goal = parcel ? {
+            valid: true,
+            position: parcel.position,
+            finalAction: AgentActions.PICKUP
+        } : {valid: false};
     }
 
-    async evaluation(): Promise<IDesireEvaluation> {
-        if (this.evaluationCache) {
-            return this.evaluationCache;
-        }
+    // async evaluation(): Promise<IDesireEvaluation> {
+    //     if (this.evaluationCache) {
+    //         return this.evaluationCache;
+    //     }
+    //
+    //     this.evaluationCache = await this.evaluate();
+    //     return this.evaluationCache;
+    // }
 
-        this.evaluationCache = await this.evaluate();
-        return this.evaluationCache;
-    }
-
-    private async evaluate(): Promise<IDesireEvaluation> {
+    async evaluate(): Promise<IDesireEvaluation> {
         const parcel = this.belief.parcels.get(this.parcelId);
         if (!parcel) {
             return {
@@ -81,4 +85,4 @@ class PickupParcelDesire implements IDesire {
     }
 }
 
-export { PickupParcelDesire };
+export {PickupParcelDesire};

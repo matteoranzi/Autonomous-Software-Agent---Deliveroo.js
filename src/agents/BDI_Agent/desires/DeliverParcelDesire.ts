@@ -17,16 +17,16 @@ class DeliverParcelDesire implements IDesire {
         this.goal = {valid: true, position: deliveryTilePosition, finalAction: AgentActions.DROP};
     }
 
-    async evaluation(): Promise<IDesireEvaluation> {
-        if (this.evaluationCache) {
-            return this.evaluationCache;
-        }
+    // async evaluate(): Promise<IDesireEvaluation> {
+    //     // if (this.evaluationCache) {
+    //     //     return this.evaluationCache;
+    //     // }
+    //
+    //     this.evaluationCache = await this.evaluate();
+    //     return this.evaluationCache;
+    // }
 
-        this.evaluationCache = await this.evaluate();
-        return this.evaluationCache;
-    }
-
-    private async evaluate(): Promise<IDesireEvaluation> {
+    async evaluate(): Promise<IDesireEvaluation> {
         if (!this.goal.valid) {
             return {
                 utility: -Infinity,
@@ -72,4 +72,4 @@ class DeliverParcelDesire implements IDesire {
     }
 }
 
-export { DeliverParcelDesire };
+export {DeliverParcelDesire};
