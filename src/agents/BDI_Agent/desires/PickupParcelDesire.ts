@@ -34,7 +34,7 @@ class PickupParcelDesire implements IDesire {
         let parcel = this.belief.parcels.get(this.parcelId);
 
         // Checks if the parcel still exists and is not being carried by another agent (and the position is walkable).
-        if (parcel && !parcel.carriedBy && this.belief.isPositionCurrentlyWalkable(parcel.position)) {
+        if (parcel && !parcel.carriedBy && this.belief.isPositionWalkableWithTolerance(parcel.position)) {
             // If the parcel is no longer in the same position as when the desire was formed, then the desire is no longer valid
             // and should invalidate that part of the intention (if it were actually being executed)
 

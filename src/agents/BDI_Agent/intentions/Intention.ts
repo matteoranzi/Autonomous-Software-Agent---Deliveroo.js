@@ -5,7 +5,7 @@ class Intention {
     // FIXME: is it an "intention strategy" or a planner? (e.g., MCTS planner)
     private readonly _strategy: IIntentionStrategy;
 
-    currentDesire: IDesire | null = null;
+    committedDesire: IDesire | null = null;
 
     constructor(strategy: IIntentionStrategy) {
         this._strategy = strategy;
@@ -14,13 +14,13 @@ class Intention {
     // Single-minded commitment
     // TODO: ingestion of deliberation strategy
     deliberate(desires: IDesire[]): IDesire | null {
-        if (this.currentDesire?.isValid()) {
-            return this.currentDesire
+        if (this.committedDesire?.isValid()) {
+            return this.committedDesire
         }
 
-        this.currentDesire = this._strategy.select(desires)[0] ?? null;
+        this.committedDesire = this._strategy.select(desires)[0] ?? null;
 
-        return this.currentDesire;
+        return this.committedDesire;
     }
 }
 

@@ -91,9 +91,14 @@ This algorithm here is used to identify hotspots in the map that let, collective
 For each area, I should identify a set of tiles that are able to make such observation, in order to fallback on those if the main one is occupied.
 ![Maximum Coverage Location Problem](imgs/maximum_coverage_location_problem.jpeg)
 
+"Another agent is carrying the parcel" (current logic) is a hard fact: the goal is now literally impossible. This belongs in isValid() — a strict boolean gate, correctly named.
+- "Another agent is closer and heading there" is not a fact, it's a competitive estimate — they might not actually go for it, might get blocked, might change direction. Folding that into a boolean     
+  isValid() means the desire gets discarded the moment a rival merely looks closer, even if they never actually take it — that's exactly the oscillation/premature-abandonment failure mode we already   
+  flagged earlier this session (the deferred fuzzy-scoring-before-MCTS discussion, and the "dropped-then-still-valid desire could oscillate" note in the plan file).
+- 
 ---
 
-## Option Generation
+# Option Generation
 The agent surveys its current beliefs and existing intentions to generate a menu of potential new desires. For example, if an autonomous rover believes a storm is approaching and currently intends to collect soil samples, it might generate a new desire to seek shelter
 
 **TODO**

@@ -26,13 +26,9 @@ class DeliverParcelDesire implements IDesire {
             return false;
         }
 
-        // FIXME: what if the position in only momentarily unwalkable? we shouldn't immediately discard the desire,
-        //  but rather wait for a few ticks to see if it becomes walkable again.
-        //  This is especially important in a multi-agent environment where other agents may temporarily block the path.
-
         // TODO also consider stale information in the belief (maybe an agent is no longer in the position it was last seen in, but we haven't sensed it yet)
         if (this.belief.isAgentCarryingParcels(this.belief.me.id)
-            && this.belief.isPositionCurrentlyWalkable(this.goal.position)) {
+            && this.belief.isPositionWalkableWithTolerance(this.goal.position)) {
             return true;
         }
 

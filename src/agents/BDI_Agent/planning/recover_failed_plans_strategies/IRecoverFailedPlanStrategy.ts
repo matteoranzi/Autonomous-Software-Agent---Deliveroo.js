@@ -1,14 +1,12 @@
-enum FailedMoveResolution {
-    RETRY,
-    REPLAN,
-    ABORT
+enum FailedPlanResolution {
+    RETRY = "RETRY",
+    REPLAN = "REPLAN",
+    ABORT = "ABORT"
 }
 
 interface IRecoverFailedPlanStrategy {
     readonly name: string;
-
-    //TODO does the resolve need Belief/Plan/CurrentAction/Intention ?
-    resolve(): FailedMoveResolution;
+    resolve(): FailedPlanResolution;
 }
 
-export { IRecoverFailedPlanStrategy, FailedMoveResolution};
+export { IRecoverFailedPlanStrategy, FailedPlanResolution};

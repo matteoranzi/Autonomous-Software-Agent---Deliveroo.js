@@ -3,7 +3,7 @@ import {Parcel} from "@/agents/BDI_Agent/beliefs/primitives/Parcel"
 import {Agent} from "@/agents/BDI_Agent/beliefs/primitives/Agent"
 import {Crate} from "@/agents/BDI_Agent/beliefs/primitives/Crate"
 import {TypedBeliefEmitter} from "@/agents/BDI_Agent/beliefs/events";
-import {positionsEqual} from "@/agents/BDI_Agent/utils";
+import {positionKey, positionsEqual} from "@/agents/BDI_Agent/utils";
 import {
     AgentsDiff, CratesDiff,
     DeliberationContext,
@@ -63,6 +63,7 @@ class Belief {
 
     private readonly _beliefEvents: TypedBeliefEmitter;
     private readonly _changeDetectionRunner: ChangeDetectionRunner;
+    private readonly _blockedSince: Map<string, number> = new Map();
 
     constructor(gameConfig: GameConfig, gameMap: GameMap, me: Agent, strategies: IChangeDetectionStrategy[] = new ChangeDetectionStrategyBuilder().withDefaults().build()) {
         this.gameConfig = gameConfig;
@@ -290,28 +291,48 @@ class Belief {
     //  - blocked by another agent (i.e., how long it stayed still on such position)
     //  - crowding of surroundings
     //  ---> not a boolean value but a Fuzzy Logic score
-    isPositionCurrentlyWalkable(position: Position): boolean {
+    private _isPositionInBoundsAndTerrainWalkable(position: Position): boolean {
         // Check if the position is within the bounds of the map
         if (position.x < 0 || position.x >= this.map.width || position.y < 0 || position.y >= this.map.height) {
             return false;
         }
 
         // Check if the terrain itself is walkable
-        if (!this.map.grid[position.x][position.y].isWalkable) {
-            return false;
-        }
+        return this.map.grid[position.x][position.y].isWalkable;
+    }
 
+    private _isPositionOccupied(position: Position): boolean {
         // Check if any other agent is currently occupying the position
         if ([...this.agents.values()].some((agent) => agent.id !== this.me.id && positionsEqual(agent.position, position))) {
-            return false;
+            return true;
         }
 
         // Check if any crate is currently occupying the position
-        if ([...this.crates.values()].some((crate) => positionsEqual(crate.position, position))) {
+        return [...this.crates.values()].some((crate) => positionsEqual(crate.position, position));
+    }
+
+    isPositionCurrentlyWalkable(position: Position): boolean {
+        return this._isPositionInBoundsAndTerrainWalkable(position) && !this._isPositionOccupied(position);
+    }
+
+    // Tolerates transient occupancy (e.g. a rival momentarily standing on the tile) for up to
+    // toleranceMs before treating the position as genuinely unwalkable. Out-of-bounds/wall tiles
+    // are never tolerated - only occupancy is transient.
+    isPositionWalkableWithTolerance(position: Position, toleranceMs: number = 2000): boolean {
+        if (!this._isPositionInBoundsAndTerrainWalkable(position)) {
             return false;
         }
 
-        return true;
+        const key = positionKey(position);
+        if (!this._isPositionOccupied(position)) {
+            this._blockedSince.delete(key);
+            return true;
+        }
+
+        const firstBlockedAt = this._blockedSince.get(key) ?? Date.now();
+        this._blockedSince.set(key, firstBlockedAt);
+
+        return Date.now() - firstBlockedAt < toleranceMs;
     }
 
     isAgentCarryingParcels(agentId: string): boolean {

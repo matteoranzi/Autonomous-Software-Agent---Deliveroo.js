@@ -2,7 +2,7 @@ import {IPathFinder, PathfindingResult} from "@/agents/BDI_Agent/planning/pathfi
 import {AStarPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/AStarPathFinder";
 import {Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
-import {Plan, ValidPlan} from "@/agents/BDI_Agent/planning/Plan";
+import {Plan} from "@/agents/BDI_Agent/planning/Plan";
 
 class Planner {
     // Ordered list of pathfinding algorithms to fallback on if the previous one fails to find a path
@@ -13,23 +13,21 @@ class Planner {
         this._pathFinders = pathFinders;
     }
 
-    async plan(start: Position, desire: IDesire): Promise<ValidPlan> {
+    async plan(start: Position, desire: IDesire): Promise<Plan | null> {
         if (!desire.goal.valid) {
-            return { valid: false };
+            return null;
         }
 
-        let result: PathfindingResult;
         for (const pathFinder of this._pathFinders) {
-            const result = await pathFinder.findPath(start, desire.goal.position);
+            const result: PathfindingResult = await pathFinder.findPath(start, desire.goal.position);
 
             if (result.found) {
-                return {
-                    valid: true,
-                    plan: new Plan(result.path, desire.goal.finalAction)
-                };
+                return new Plan(result.path, desire.goal.finalAction);
             }
         }
 
-        return { valid: false };
+        return null;
     }
 }
+
+export {Planner};

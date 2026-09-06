@@ -6,8 +6,11 @@ import {adaptConfigPayload} from "@/io/adapters/configAdapter";
 import {Agent} from "@/agents/BDI_Agent/beliefs/primitives/Agent";
 import {AgentConfig} from "@/config";
 import {DesiresGenerator} from "@/agents/BDI_Agent/desires/DesiresGenerator";
-import {IPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/IPathFinder";
 import {AStarPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/AStarPathFinder";
+import {Planner} from "@/agents/BDI_Agent/planning/Planner";
+import {PlanExecutor} from "@/agents/BDI_Agent/planning/PlanExecutor";
+import {RetryThenAbortStrategy} from "@/agents/BDI_Agent/planning/recover_failed_plans_strategies/RetryThenAbortStrategy";
+import {ReplanThenAbortStrategy} from "@/agents/BDI_Agent/planning/recover_failed_plans_strategies/ReplanThenAbortStrategy";
 import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/ChangeDetectionStrategyBuilder";
 import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
 import {Intention} from "@/agents/BDI_Agent/intentions/Intention";
@@ -38,7 +41,9 @@ class BDI_Agent {
     private desiresGenerator: DesiresGenerator;
     private intention: Intention;
 
-    private pathFinder: IPathFinder
+    private planner: Planner;
+    private planExecutor: PlanExecutor;
+    private _executing = false;
 
     constructor(config: AgentConfig) {
         this._djsClient = DjsConnect(config.host, config.token);
@@ -58,22 +63,31 @@ class BDI_Agent {
     private async _initializeBDI_Agent(): Promise<void> {
         await this._initializeBelief();
         await this._initializeDesireAndIntention();
-
-        this.pathFinder = new AStarPathFinder(this.belief);
     }
 
     private async _initializeDesireAndIntention() {
         this.desiresGenerator = new DesiresGenerator(this.belief);
         this.intention = new Intention(new HighestScoreIntentionStrategy());
 
+        this.planner = new Planner([new AStarPathFinder(this.belief)]);
+        this.planExecutor = new PlanExecutor(
+            this.planner,
+            () => new ReplanThenAbortStrategy(new RetryThenAbortStrategy(5), 2), // TODO make retry/replan limits configurable
+            this.intention,
+            (action) => this._emitAction(action),
+            () => this.belief.me.position,
+        );
+
         // Generate initial desires and deliberate on them.
         this.desiresGenerator.regenerate().filter()
         this.intention.deliberate(this.desiresGenerator.desires);
+        this._tryStartExecution();
 
         // Backstop timer to ensure that desires are regenerated at least every second, even if no relevant changes are detected.
         let desiresGenerationBackstopTimer: ReturnType<typeof setInterval> = setInterval(() => {
             this.desiresGenerator.regenerate().filter()
             this.intention.deliberate(this.desiresGenerator.desires);
+            this._tryStartExecution();
         }, 1000) // TODO make this configurable
 
         // Listen for relevant changes in the belief and update the desires accordingly.
@@ -84,9 +98,25 @@ class BDI_Agent {
             //  For now, we will just clear the desires and generate new ones.
             this.desiresGenerator.regenerate().filter()
             this.intention.deliberate(this.desiresGenerator.desires);
+            this._tryStartExecution();
 
             // Reset the backstop timer since we have detected relevant changes and updated the desires.
             desiresGenerationBackstopTimer.refresh();
+        });
+    }
+
+    // Starts executing the committed desire if nothing is currently executing. If execution is
+    // already in flight, PlanExecutor itself detects a mid-flight commitment change and aborts -
+    // the next deliberation trigger (belief event, or the 1s backstop at worst) will pick up
+    // whatever is committed at that point.
+    private _tryStartExecution(): void {
+        if (this._executing || !this.intention.committedDesire) {
+            return;
+        }
+
+        this._executing = true;
+        this.planExecutor.execute().finally(() => {
+            this._executing = false;
         });
     }
 
@@ -185,11 +215,11 @@ class BDI_Agent {
 
         bdi_agent_str += "\n\n*************************************************************\n\n";
         bdi_agent_str += "*** INTENTION ***\n\n";
-        if (this.intention.currentDesire) {
-            if (this.intention.currentDesire.goal.valid) {
-                bdi_agent_str += `  - ${this.intention.currentDesire.name} (goal: ${this.intention.currentDesire.goal.position.x},${this.intention.currentDesire.goal.position.y})\n`;
+        if (this.intention.committedDesire) {
+            if (this.intention.committedDesire.goal.valid) {
+                bdi_agent_str += `  - ${this.intention.committedDesire.name} (goal: ${this.intention.committedDesire.goal.position.x},${this.intention.committedDesire.goal.position.y})\n`;
             } else {
-                bdi_agent_str += `  - ${this.intention.currentDesire.name} (goal: [INVALID])\n`;
+                bdi_agent_str += `  - ${this.intention.committedDesire.name} (goal: [INVALID])\n`;
             }
         } else {
             bdi_agent_str += "  - [NO CURRENT INTENTION]\n";

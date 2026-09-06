@@ -21,6 +21,7 @@ interface IDesire {
 }
 
 // TODO determine proper desire evaluation parameters
+//  e.g., "A rival is likely to beat me to this parcel" is precisely what risk is for
 interface IDesireEvaluation {
     utility: number;
     estimatedSteps: number;

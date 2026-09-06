@@ -20,7 +20,4 @@ class Plan {
         return this.finalAction ? [...navigationActions, this.finalAction] : navigationActions;
     }
 }
-
-type ValidPlan = { valid: true; plan: Plan;} | { valid: false};
-
-export {Plan, ValidPlan};
+export {Plan};
