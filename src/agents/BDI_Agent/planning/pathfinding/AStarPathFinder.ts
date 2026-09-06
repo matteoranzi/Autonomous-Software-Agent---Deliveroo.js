@@ -68,7 +68,7 @@ class AStarPathFinder implements IPathFinder {
             start: goalTile, // will be updated to the true start after walking back
             goal: goalTile,
             cost: 0,
-            path: []
+            steps: []
         }
 
         while (true) {
@@ -81,13 +81,13 @@ class AStarPathFinder implements IPathFinder {
                 return {found: false};
             }
 
-            navigationPath.path.push({from: predecessor, to: currentTile, action: direction});
+            navigationPath.steps.push({from: predecessor, to: currentTile, action: direction});
 
             currentTile = predecessor;
             navigationPath.cost++;
         }
 
-        navigationPath.path = navigationPath.path.reverse();
+        navigationPath.steps = navigationPath.steps.reverse();
         navigationPath.start = currentTile; // walked all the way back: this is the true start
         return {found: true, path: navigationPath};
     }

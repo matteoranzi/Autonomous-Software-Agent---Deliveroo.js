@@ -5,7 +5,7 @@ type NavigationPath = {
     start: Position,
     goal: Position,
     cost: number,
-    path: {
+    steps: {
         from: Position,
         to: Position,
         action: AgentActions,

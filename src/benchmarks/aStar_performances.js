@@ -249,7 +249,7 @@ export class BenchmarkAgent {
 
     /** @param {NavigationPath} navigationPath */
     #loadIntentionActions(navigationPath) {
-        for (const step of navigationPath.path) {
+        for (const step of navigationPath.steps) {
             this.#agentMovingActions.push(step);
         }
     }
