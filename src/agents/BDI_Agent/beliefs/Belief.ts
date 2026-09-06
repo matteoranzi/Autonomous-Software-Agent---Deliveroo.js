@@ -141,6 +141,10 @@ class Belief {
         });
     }
 
+    getTile(position: Position): Tile | null {
+        return this._isPositionInBoundsAndTerrainWalkable(position) ? this.map.grid[position.x][position.y] : null;
+    }
+
     private _seedCrateKey(position: Position): string {
         return `seed:${position.x},${position.y}`;
     }
@@ -319,10 +323,11 @@ class Belief {
         return this._isPositionInBoundsAndTerrainWalkable(position);
     }
 
-    // Tolerates transient occupancy (e.g. a rival momentarily standing on the tile) for up to
-    // toleranceMs before treating the position as genuinely unwalkable. Out-of-bounds/wall tiles
-    // are never tolerated - only occupancy is transient.
-    isPositionWalkableWithTolerance(position: Position, toleranceMs: number = 2000): boolean {
+
+    // Blends transient-occupancy tolerance (e.g. a rival momentarily standing there) with staleness of the tile's last observation
+    positionWalkabilityLikelihood(position: Position, toleranceMs: number = 2000): boolean {
+        const WALKABILITY_LIKELIHOOD_THRESHOLD = 0.5;
+
         if (!this._isPositionInBoundsAndTerrainWalkable(position)) {
             return false;
         }
@@ -336,7 +341,13 @@ class Belief {
         const firstBlockedAt = this._blockedSince.get(key) ?? Date.now();
         this._blockedSince.set(key, firstBlockedAt);
 
-        return Date.now() - firstBlockedAt < toleranceMs;
+        const occupiedFor = Date.now() - firstBlockedAt;
+        const staleness = Date.now() - this.map.grid[position.x][position.y].lastTimeObserved;
+
+        const toleranceConfidence = Math.max(0, 1 - occupiedFor / toleranceMs);
+        const observationConfidence = Math.max(0, 1 - staleness / toleranceMs);
+
+        return Math.max(toleranceConfidence, 1 - observationConfidence) >= WALKABILITY_LIKELIHOOD_THRESHOLD;
     }
 
     isAgentCarryingParcels(agentId: string): boolean {
@@ -351,8 +362,8 @@ class Belief {
         let beliefString = '*** BELIEF ***\n\n';
 
         beliefString += this._meToString();
-        beliefString += '\n=========\n';
-        beliefString += this._gameConfigToString();
+        // beliefString += '\n=========\n';
+        // beliefString += this._gameConfigToString();
         if (showGridMap) {
             beliefString += '\n=========\n';
             beliefString += this._gridToString(showHeatMap);
@@ -425,7 +436,7 @@ class Belief {
                 let tileInfo = parcelHere ? `${parcelHere}`.padStart(2, ' ') : '  ';
 
                 if (positionsEqual(this.me.position, {x, y})) {
-                    tileInfo = "🏎"; // Highlight the agent's position
+                    tileInfo = "🏎 "; // Highlight the agent's position
                 }
 
                 this.agents.forEach((agent) => {

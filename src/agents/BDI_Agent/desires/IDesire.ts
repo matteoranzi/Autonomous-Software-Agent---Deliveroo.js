@@ -6,15 +6,9 @@ type Goal = {valid: true, position: Position, finalAction: AgentActions | null}
 
 interface IDesire {
     readonly name: string;
-
-    belief: Belief;
     goal: Goal; // Where the Agent intends to head based on the info he had when he formed this desire
 
-    // Cheap heuristic score for the coarse filter pass
-    estimateValue(): number;
-
-    // Expensive evaluation of the desire's value, after the coarse filter pass
-    evaluateValue(): Promise<IDesireEvaluation>;
+    evaluation(): Promise<IDesireEvaluation>;
 
     // Returns true if the desire is still valid, false if it should be discarded
     isValid(): boolean;
@@ -24,10 +18,17 @@ interface IDesire {
 //  e.g., "A rival is likely to beat me to this parcel" is precisely what risk is for
 interface IDesireEvaluation {
     utility: number;
-    estimatedSteps: number;
+    estimatedCost: number;
     risk: number;
-    urgency: number;
+    urgency: PRIORITY;
     expectedReward: number;
+    category: string;
 }
 
-export {IDesire, IDesireEvaluation, Goal }
+enum PRIORITY {
+    LOW = 1,
+    MEDIUM = 2,
+    HIGH = 3
+}
+
+export {IDesire, IDesireEvaluation, Goal, PRIORITY }

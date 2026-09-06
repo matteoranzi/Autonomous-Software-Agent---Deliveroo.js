@@ -1,14 +1,18 @@
-import {Goal, IDesire, IDesireEvaluation} from "./IDesire";
+import {Goal, IDesire, IDesireEvaluation, PRIORITY} from "./IDesire";
 import {Belief} from "@/agents/BDI_Agent/beliefs/Belief";
 import {positionsEqual} from "@/agents/BDI_Agent/utils";
 import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
+import {PredictivePlanner} from "@/agents/BDI_Agent/planning/PredictivePlanner";
 
 class PickupParcelDesire implements IDesire {
     readonly name: string = "pick_up_parcel_desire";
     readonly parcelId: string;
 
-    belief: Belief;
     goal: Goal;
+
+    private readonly belief: Belief;
+    private evaluationCache: IDesireEvaluation | null = null;
+
 
     constructor(belief: Belief, parcelId: string) {
         this.parcelId = parcelId;
@@ -18,12 +22,40 @@ class PickupParcelDesire implements IDesire {
         this.goal = parcel ? {valid: true, position: parcel.position, finalAction: AgentActions.PICKUP} : {valid: false};
     }
 
-    estimateValue(): number {
-        return 1;
+    async evaluation(): Promise<IDesireEvaluation> {
+        if (this.evaluationCache) {
+            return this.evaluationCache;
+        }
+
+        this.evaluationCache = await this.evaluate();
+        return this.evaluationCache;
     }
 
-    evaluateValue(): Promise<IDesireEvaluation> {
-        throw new Error("PickupParcelDesire.evaluateValue is not implemented yet");
+    private async evaluate(): Promise<IDesireEvaluation> {
+        const parcel = this.belief.parcels.get(this.parcelId);
+        if (!parcel) {
+            return {
+                utility: -Infinity,
+                estimatedCost: Infinity,
+                risk: 0,
+                urgency: PRIORITY.MEDIUM,
+                expectedReward: 0,
+                category: this.name
+            };
+        }
+
+        const predictivePlanner = new PredictivePlanner(this.belief);
+        const estimatedCost = await predictivePlanner.predictPlanCost(this.belief.me.position, this);
+        const expectedReward = parcel.reward;
+
+        return {
+            utility: Math.log(expectedReward) / Math.log(estimatedCost + 1),
+            estimatedCost: estimatedCost,
+            risk: 0,
+            urgency: PRIORITY.MEDIUM,
+            expectedReward,
+            category: this.name
+        };
     }
 
     isValid(): boolean {

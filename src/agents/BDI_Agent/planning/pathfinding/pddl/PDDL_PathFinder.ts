@@ -50,7 +50,7 @@ class PDDL_PathFinder implements IPathFinder {
             plan ??= finalPlan;
         } catch (err) {
             if (!(err instanceof DOMException && err.name === "AbortError")) {
-                throw err; // a real failure, not our own deliberate abort
+                throw err; // a real failure, not the deliberate abort
             }
         }
 

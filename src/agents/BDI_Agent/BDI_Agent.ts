@@ -9,16 +9,19 @@ import {DesiresGenerator} from "@/agents/BDI_Agent/desires/DesiresGenerator";
 import {AStarPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/AStarPathFinder";
 import {Planner} from "@/agents/BDI_Agent/planning/Planner";
 import {PlanExecutor} from "@/agents/BDI_Agent/planning/PlanExecutor";
-import {RetryThenAbortStrategy} from "@/agents/BDI_Agent/planning/recover_failed_plans_strategies/RetryThenAbortStrategy";
-import {ReplanThenAbortStrategy} from "@/agents/BDI_Agent/planning/recover_failed_plans_strategies/ReplanThenAbortStrategy";
+import {RetryThenAbortFailedPlanStrategy} from "@/agents/BDI_Agent/planning/recover_plans_strategies/RetryThenAbortFailedPlanStrategy";
+import {ReplanThenAbortFailedPlanStrategy} from "@/agents/BDI_Agent/planning/recover_plans_strategies/ReplanThenAbortFailedPlanStrategy";
 import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/ChangeDetectionStrategyBuilder";
 import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
 import {Intention} from "@/agents/BDI_Agent/intentions/Intention";
-import {HighestScoreIntentionStrategy} from "@/agents/BDI_Agent/intentions/HighestScoreIntentionStrategy";
+import {GreedyIntentionStrategy} from "@/agents/BDI_Agent/intentions/GreedyIntentionStrategy";
 
 import { DjsConnect } from "@matteoranzi/deliveroo-js-sdk/client";
 import {PDDL_PathFinder} from "@/agents/BDI_Agent/planning/pathfinding/pddl/PDDL_PathFinder";
-import {CLEAN_MAP_MODE} from "@/agents/BDI_Agent/planning/pathfinding/pddl/pddlPathfindingProblemGenerator";
+import {
+    CLEAN_MAP_MODE,
+    FROZEN_SNAPSHOT_MODE
+} from "@/agents/BDI_Agent/planning/pathfinding/pddl/pddlPathfindingProblemGenerator";
 
 enum AgentActions {
     PICKUP = "PICKUP",
@@ -46,6 +49,7 @@ class BDI_Agent {
     private planner: Planner;
     private planExecutor: PlanExecutor;
     private _executing = false;
+    private _deliberating = false;
 
     constructor(config: AgentConfig) {
         this._djsClient = DjsConnect(config.host, config.token);
@@ -68,15 +72,15 @@ class BDI_Agent {
 
     private async _run() {
         this.desiresGenerator = new DesiresGenerator(this.belief);
-        this.intention = new Intention(new HighestScoreIntentionStrategy());
+        this.intention = new Intention(new GreedyIntentionStrategy(this.belief));
 
         this.planner = new Planner([
             new AStarPathFinder(this.belief),
-            new PDDL_PathFinder(this.belief, CLEAN_MAP_MODE, this._appConfig.pddlSolverMaxTimeS),
+            new PDDL_PathFinder(this.belief, FROZEN_SNAPSHOT_MODE /*CLEAN_MAP_MODE*/, this._appConfig.pddlSolverMaxTimeS),
         ]);
         this.planExecutor = new PlanExecutor(
             this.planner,
-            () => new ReplanThenAbortStrategy(new RetryThenAbortStrategy(0), 2), // TODO make retry/replan limits configurable
+            () => new ReplanThenAbortFailedPlanStrategy(new RetryThenAbortFailedPlanStrategy(0), 2), // TODO make retry/replan limits configurable
             this.intention,
             (action) => this._emitAction(action),
             () => this.belief.me.position,
@@ -103,14 +107,20 @@ class BDI_Agent {
         this._deliberationCycle();
     }
 
-    private _deliberationCycle() {
-        this.desiresGenerator.regenerate().filter()
+    private async _deliberationCycle(): Promise<void> {
+        if (this._deliberating) {
+            return;
+        }
 
-        // Deliberate on every cycle regardless of whether we're currently executing
-        // PlanExecutor's own interruption check depends on `committedDesire` staying live/up to date while a plan runs.
-        this.intention.deliberate(this.desiresGenerator.desires);
+        this._deliberating = true;
+        try {
+            this.desiresGenerator.regenerate().filter()
+            await this.intention.deliberate(this.desiresGenerator.desires);
+        } finally {
+            this._deliberating = false;
+        }
 
-        // Only start a new execution if the commitment actually changed AND nothing is already running
+        // Only start a new execution if there's something committed AND nothing is already running
         if (!this.intention.committedDesire || this._executing) {
             return;
         }

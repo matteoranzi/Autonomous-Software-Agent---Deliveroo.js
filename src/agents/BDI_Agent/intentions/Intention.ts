@@ -20,18 +20,14 @@ class Intention {
         this._strategy = strategy;
     }
 
-    // Single-minded commitment
-    // TODO: ingestion of deliberation strategy
-    //  e.g., Monte Carlo Tree Search (MCTS) to evaluate the best desire to commit to, based on the current belief, desires and current intention
-
-    // Returns true iff the commitment changed to a different real-world target
-    deliberate(desires: IDesire[]): void {
+    // TODO: Ingest commitment strategy (single-minded, multi-mind, etc.) and select a desire to commit to from the given desires.
+    async deliberate(desires: IDesire[]): Promise<void> {
         if (this.committedDesire?.isValid()) {
             return;
         }
 
-        this.committedDesire =  this._strategy.select(desires)[0] ?? null;;
-        return;
+        const selected = await this._strategy.select(desires);
+        this.committedDesire = selected[0] ?? null;
     }
 }
 

@@ -1,24 +1,55 @@
-import {Goal, IDesire, IDesireEvaluation} from "./IDesire";
+import {Goal, IDesire, IDesireEvaluation, PRIORITY} from "./IDesire";
 import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
+import {PredictivePlanner} from "@/agents/BDI_Agent/planning/PredictivePlanner";
 
 class DeliverParcelDesire implements IDesire {
     readonly name: string = "deliver_parcel_desire";
 
-    belief: Belief;
     goal: Goal;
+
+    private readonly belief: Belief;
+    private evaluationCache: IDesireEvaluation | null = null;
+
 
     constructor(belief: Belief, deliveryTilePosition: Position) {
         this.belief = belief;
         this.goal = {valid: true, position: deliveryTilePosition, finalAction: AgentActions.DROP};
     }
 
-    estimateValue(): number {
-        return 2;
+    async evaluation(): Promise<IDesireEvaluation> {
+        if (this.evaluationCache) {
+            return this.evaluationCache;
+        }
+
+        this.evaluationCache = await this.evaluate();
+        return this.evaluationCache;
     }
 
-    evaluateValue(): Promise<IDesireEvaluation> {
-        throw new Error("DeliverParcelDesire.evaluateValue is not implemented yet");
+    private async evaluate(): Promise<IDesireEvaluation> {
+        if (!this.goal.valid) {
+            return {
+                utility: -Infinity,
+                estimatedCost: Infinity,
+                risk: 0,
+                urgency: PRIORITY.HIGH,
+                expectedReward: 0,
+                category:
+                this.name
+            };
+        }
+
+        const predictivePlanner = new PredictivePlanner(this.belief);
+        const estimatedCost = await predictivePlanner.predictPlanCost(this.belief.me.position, this);
+
+        return {
+            utility: -estimatedCost,
+            estimatedCost: estimatedCost,
+            risk: 0,
+            urgency: PRIORITY.HIGH,
+            expectedReward: 0,
+            category: this.name
+        };
     }
 
     isValid(): boolean {
@@ -26,9 +57,8 @@ class DeliverParcelDesire implements IDesire {
             return false;
         }
 
-        // TODO also consider stale information in the belief (maybe an agent is no longer in the position it was last seen in, but we haven't sensed it yet)
         if (this.belief.isAgentCarryingParcels(this.belief.me.id)
-            && this.belief.isPositionCurrentlyWalkable(this.goal.position)) {
+            && this.belief.positionWalkabilityLikelihood(this.goal.position)) {
             return true;
         }
 

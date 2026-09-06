@@ -9,7 +9,7 @@ interface IIntentionStrategy {
      * @param desires
      * @returns A best-to-worst ordered subset of desires that have been selected as intentions.
      */
-    select(desires: IDesire[]): IDesire[];
+    select(desires: IDesire[]): Promise<IDesire[]>;
 }
 
 export {IIntentionStrategy}

@@ -1,17 +1,17 @@
 import {
     FailedPlanResolution,
-    IRecoverFailedPlanStrategy
-} from "@/agents/BDI_Agent/planning/recover_failed_plans_strategies/IRecoverFailedPlanStrategy";
+    IRecoverPlanStrategy
+} from "@/agents/BDI_Agent/planning/recover_plans_strategies/IRecoverPlanStrategy";
 
-class ReplanThenAbortStrategy implements IRecoverFailedPlanStrategy {
+class ReplanThenAbortFailedPlanStrategy implements IRecoverPlanStrategy {
     readonly name: string = "replan_then_abort_on_failed_plan";
 
     readonly maxReplans: number;
     private replans: number = 0;
 
-    private readonly innerStrategy: IRecoverFailedPlanStrategy;
+    private readonly innerStrategy: IRecoverPlanStrategy;
 
-    constructor(innerStrategy: IRecoverFailedPlanStrategy, maxReplans: number) {
+    constructor(innerStrategy: IRecoverPlanStrategy, maxReplans: number) {
         this.innerStrategy = innerStrategy;
         this.maxReplans = maxReplans;
 
@@ -33,4 +33,4 @@ class ReplanThenAbortStrategy implements IRecoverFailedPlanStrategy {
     }
 }
 
-export { ReplanThenAbortStrategy };
+export { ReplanThenAbortFailedPlanStrategy };

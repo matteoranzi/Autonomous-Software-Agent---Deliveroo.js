@@ -1,9 +1,9 @@
 import {
     FailedPlanResolution,
-    IRecoverFailedPlanStrategy
-} from "@/agents/BDI_Agent/planning/recover_failed_plans_strategies/IRecoverFailedPlanStrategy";
+    IRecoverPlanStrategy
+} from "@/agents/BDI_Agent/planning/recover_plans_strategies/IRecoverPlanStrategy";
 
-class RetryThenAbortStrategy implements IRecoverFailedPlanStrategy {
+class RetryThenAbortFailedPlanStrategy implements IRecoverPlanStrategy {
     readonly name: string = "retry_then_abort_on_failed_plan";
 
     readonly maxRetries: number;
@@ -25,4 +25,4 @@ class RetryThenAbortStrategy implements IRecoverFailedPlanStrategy {
     }
 }
 
-export { RetryThenAbortStrategy };
+export { RetryThenAbortFailedPlanStrategy };

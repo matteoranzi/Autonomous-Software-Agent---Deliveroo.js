@@ -4,9 +4,9 @@ enum FailedPlanResolution {
     ABORT = "ABORT"
 }
 
-interface IRecoverFailedPlanStrategy {
+interface IRecoverPlanStrategy {
     readonly name: string;
     resolve(): FailedPlanResolution;
 }
 
-export { IRecoverFailedPlanStrategy, FailedPlanResolution};
+export { IRecoverPlanStrategy, FailedPlanResolution};

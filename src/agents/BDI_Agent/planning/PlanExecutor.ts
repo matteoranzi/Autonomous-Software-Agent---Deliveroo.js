@@ -1,8 +1,8 @@
 import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
 import {
     FailedPlanResolution,
-    IRecoverFailedPlanStrategy
-} from "@/agents/BDI_Agent/planning/recover_failed_plans_strategies/IRecoverFailedPlanStrategy";
+    IRecoverPlanStrategy
+} from "@/agents/BDI_Agent/planning/recover_plans_strategies/IRecoverPlanStrategy";
 import {Planner} from "@/agents/BDI_Agent/planning/Planner";
 import {Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
@@ -10,7 +10,7 @@ import {desireIdentity, Intention} from "@/agents/BDI_Agent/intentions/Intention
 
 class PlanExecutor {
     private readonly planner: Planner;
-    private readonly makeRecoveryStrategy: () => IRecoverFailedPlanStrategy;
+    private readonly makeRecoveryStrategy: () => IRecoverPlanStrategy;
 
     private readonly emitAction: (action: AgentActions) => Promise<boolean>;
     private readonly getCurrentPosition: () => Position;
@@ -19,7 +19,7 @@ class PlanExecutor {
 
     constructor(
         planner: Planner,
-        makeRecoveryStrategy: () => IRecoverFailedPlanStrategy,
+        makeRecoveryStrategy: () => IRecoverPlanStrategy,
         intention: Intention,
         emitAction: (action: AgentActions) => Promise<boolean>,
         getCurrentPosition: () => Position
@@ -55,6 +55,7 @@ class PlanExecutor {
                 // The current desire has changed, so the agent must stop executing the plan
                 return false;
             }
+
             const success = await this.emitAction(plan.actions[i]);
             if (success) {
                 i++;
