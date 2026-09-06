@@ -8,8 +8,8 @@ import {AgentConfig} from "@/config";
 import {DesiresGenerator} from "@/agents/BDI_Agent/desires/DesiresGenerator";
 import {IPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/IPathFinder";
 import {AStarPathFinder} from "@/agents/BDI_Agent/planning/pathfinding/AStarPathFinder";
-import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/changeDetection/ChangeDetectionStrategyBuilder";
-import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
+import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/ChangeDetectionStrategyBuilder";
+import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
 import {Intention} from "@/agents/BDI_Agent/intentions/Intention";
 import {HighestScoreIntentionStrategy} from "@/agents/BDI_Agent/intentions/HighestScoreIntentionStrategy";
 

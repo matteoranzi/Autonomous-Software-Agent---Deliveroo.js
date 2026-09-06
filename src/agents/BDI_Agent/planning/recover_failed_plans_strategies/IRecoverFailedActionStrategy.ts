@@ -4,11 +4,11 @@ enum FailedMoveResolution {
     ABORT
 }
 
-interface IFailedActionStrategy {
+interface IRecoverFailedActionStrategy {
     readonly name: string;
 
     //TODO does the resolve need Belief/Plan/CurrentAction/Intention ?
     resolve(): FailedMoveResolution;
 }
 
-export { IFailedActionStrategy, FailedMoveResolution};
+export { IRecoverFailedActionStrategy, FailedMoveResolution};

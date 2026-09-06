@@ -1,4 +1,4 @@
-import {DeliberationContext, IChangeDetectionEstimator, StrategyResult} from "@/agents/BDI_Agent/beliefs/changeDetection/IChangeDetectionStrategy";
+import {DeliberationContext, IChangeDetectionEstimator, StrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
 import {positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
 
 // Interprets raw agent position deltas (self and rivals) into named facts read by other strategies.

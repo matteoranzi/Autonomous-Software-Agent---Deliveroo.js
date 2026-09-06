@@ -144,4 +144,9 @@ that yet.
 * Caching PDDL plans (pathfinding between crates): snapshots of the frozen map and relative moves to perform to reach (partial) destinations. The cache is invalidated when the map changes (i.e, a rival agent moves a crate).
   * Multiple cache version may exist, that need to be matched with the current map state.
 
-Desire regeneration and deliberation are two sequential phases sharing the same trigger points — not two separate cycles.    
+Desire regeneration and deliberation are two sequential phases sharing the same trigger points — not two separate cycles.
+
+Add a smart reconsideration mechanism for failed plans
+
+**Make composable recovery strategies for failed plans**:
+E.g., RetryThenReplan -> RetryThenAbort.

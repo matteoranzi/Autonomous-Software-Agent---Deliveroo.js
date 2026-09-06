@@ -1,9 +1,9 @@
-import {FailedMoveResolution, IFailedActionStrategy} from "@/agents/BDI_Agent/planning/execution/IFailedActionStrategy";
+import {FailedMoveResolution, IRecoverFailedActionStrategy} from "@/agents/BDI_Agent/planning/execution/IRecoverFailedActionStrategy";
 
-class RetryThenReplanOnFailedActionStrategy implements IFailedActionStrategy {
-    readonly name: string = "RetryThenReplanOnFailedAction";
-
+class RetryThenAbortOnFailedActionStrategy implements IRecoverFailedActionStrategy {
+    readonly name: string = "RetryThenAbortOnFailedAction";
     readonly maxRetries: number;
+
     private retries: number;
 
     constructor(maxRetries: number) {
@@ -16,9 +16,9 @@ class RetryThenReplanOnFailedActionStrategy implements IFailedActionStrategy {
             return FailedMoveResolution.RETRY;
         } else {
             this.retries = 0; // Reset retries for the next time this strategy is used
-            return FailedMoveResolution.REPLAN;
+            return FailedMoveResolution.ABORT;
         }
     }
 }
 
-export { RetryThenReplanOnFailedActionStrategy };
+export { RetryThenAbortOnFailedActionStrategy };
