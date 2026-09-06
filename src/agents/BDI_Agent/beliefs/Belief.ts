@@ -3,7 +3,7 @@ import {Parcel} from "@/agents/BDI_Agent/beliefs/primitives/Parcel"
 import {Agent} from "@/agents/BDI_Agent/beliefs/primitives/Agent"
 import {Crate} from "@/agents/BDI_Agent/beliefs/primitives/Crate"
 import {TypedBeliefEmitter} from "@/agents/BDI_Agent/beliefs/events";
-import {positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
+import {positionsEqual} from "@/agents/BDI_Agent/utils";
 import {
     AgentsDiff, CratesDiff,
     DeliberationContext,

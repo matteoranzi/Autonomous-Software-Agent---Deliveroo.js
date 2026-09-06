@@ -1,9 +1,9 @@
 import {DeliberationContext, IChangeDetectionEstimator, StrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
-import {positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
+import {positionsEqual} from "@/agents/BDI_Agent/utils";
 
 // Interprets raw agent position deltas (self and rivals) into named facts read by other strategies.
 class AgentTileTransitionEstimator implements IChangeDetectionEstimator {
-    readonly name = 'AgentTileTransitionEstimator';
+    readonly name = 'agent_tile_transition_estimator';
 
     static readonly ENTERED_DELIVERY_TILE = 'AgentEnteredDeliveryTile';
     static readonly EXITED_DELIVERY_TILE = 'AgentExitedDeliveryTile';

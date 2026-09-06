@@ -1,10 +1,10 @@
 import {Goal, IDesire, IDesireEvaluation} from "./IDesire";
 import {Belief} from "@/agents/BDI_Agent/beliefs/Belief";
-import {positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
+import {positionsEqual} from "@/agents/BDI_Agent/utils";
 import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
 
 class PickupParcelDesire implements IDesire {
-    readonly name: string = "PickupParcelDesire";
+    readonly name: string = "pick_up_parcel_desire";
     readonly parcelId: string;
 
     belief: Belief;

@@ -2,6 +2,8 @@ import {IIntentionStrategy} from "@/agents/BDI_Agent/intentions/IIntentionStrate
 import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
 
 class HighestScoreIntentionStrategy implements IIntentionStrategy {
+    readonly name: string = "highest_score_intention";
+
     select(desires: IDesire[]): IDesire[] {
         return [...desires].sort((a, b) => b.estimateValue() - a.estimateValue());
     }

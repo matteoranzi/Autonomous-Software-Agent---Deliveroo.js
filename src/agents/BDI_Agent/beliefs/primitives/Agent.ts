@@ -1,6 +1,6 @@
 import {Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {CircularBuffer} from "@/agents/BDI_Agent/beliefs/primitives/CircularBuffer";
-import {manhattanDistance} from "@/agents/BDI_Agent/capabilities/utils";
+import {manhattanDistance} from "@/agents/BDI_Agent/utils";
 
 enum MovementDirection {
     UP = "UP",

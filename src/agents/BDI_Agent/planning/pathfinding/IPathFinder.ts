@@ -17,6 +17,8 @@ type PathfindingResult =
     | {found: false}
 
 interface IPathFinder {
+    readonly name: string;
+
     findPath(start: Position, goal: Position): Promise<PathfindingResult>;
 }
 

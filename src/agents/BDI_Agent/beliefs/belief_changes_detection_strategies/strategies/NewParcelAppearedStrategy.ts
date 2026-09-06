@@ -1,7 +1,7 @@
 import {DeliberationContext, IChangeDetectionStrategy, StrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
 
 class NewParcelAppearedStrategy implements IChangeDetectionStrategy {
-    readonly name = 'NewParcelAppeared';
+    readonly name = 'new_parcel_appeared';
 
     evaluate(context: DeliberationContext): StrategyResult {
         let triggered: boolean = false;

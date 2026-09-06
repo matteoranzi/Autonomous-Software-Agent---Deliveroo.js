@@ -5,7 +5,7 @@ import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
 
 class VisitParcelSpawningTileDesire implements IDesire{
-    readonly name: string = "VisitParcelSpawningTileDesire";
+    readonly name: string = "visit_parcel_spawning_tile";
 
     belief: Belief;
     goal: Goal;

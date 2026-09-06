@@ -3,7 +3,7 @@ import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
 
 class DeliverParcelDesire implements IDesire {
-    readonly name: string = "DeliverParcelDesire";
+    readonly name: string = "deliver_parcel_desire";
 
     belief: Belief;
     goal: Goal;

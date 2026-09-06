@@ -2,6 +2,8 @@ import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
 
 
 interface IIntentionStrategy {
+    readonly name: string;
+
     /**
      * Selects a subset of desires to form intentions based on the strategy's criteria.
      * @param desires

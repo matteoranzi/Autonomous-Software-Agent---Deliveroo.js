@@ -1,7 +1,7 @@
 import {DeliberationContext, IChangeDetectionStrategy, StrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
 
 class CrateMovedStrategy implements IChangeDetectionStrategy {
-    readonly name: string = "CrateMoved";
+    readonly name: string = "crate_moved";
 
     //FIXME: Should it trigger only if the crate was moved by a rival agent? Currently it triggers if the crate was moved by any agent, including the agent itself.
 

@@ -2,7 +2,7 @@ import {DeliberationContext, IChangeDetectionEstimator, ParcelVanishReason, Stra
 
 // Interprets carriedByChanged/vanished into pickup/drop/delivered facts, for self and rivals alike.
 class ParcelCarriedByEstimator implements IChangeDetectionEstimator {
-    readonly name = 'ParcelCarriedByEstimator';
+    readonly name = 'parcel_carried_by_estimator';
 
     static readonly PICKED_UP = 'AgentPickedUpParcel';
     static readonly DROPPED = 'AgentDroppedParcel';

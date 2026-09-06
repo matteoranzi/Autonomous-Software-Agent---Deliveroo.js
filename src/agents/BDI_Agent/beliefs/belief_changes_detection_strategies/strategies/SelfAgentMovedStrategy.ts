@@ -1,8 +1,8 @@
 import {DeliberationContext, IChangeDetectionStrategy, StrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
-import {positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
+import {positionsEqual} from "@/agents/BDI_Agent/utils";
 
 class SelfAgentMovedStrategy implements IChangeDetectionStrategy {
-    readonly name = 'SelfAgentMoved';
+    readonly name = 'self_agent_moved';
 
     evaluate(context: DeliberationContext): StrategyResult {
 

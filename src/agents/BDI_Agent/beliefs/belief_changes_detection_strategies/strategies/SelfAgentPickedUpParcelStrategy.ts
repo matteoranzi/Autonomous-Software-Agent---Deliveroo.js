@@ -7,7 +7,7 @@ import {
 import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/estimators/ParcelCarriedByEstimator";
 
 class SelfAgentPickedUpParcelStrategy implements IChangeDetectionStrategy {
-    readonly name = 'SelfAgentPickedUpParcel';
+    readonly name = 'self_agent_picked_up_parcel';
 
     evaluate(context: DeliberationContext): StrategyResult {
         const fact = context.facts.get(ParcelCarriedByEstimator.PICKED_UP) ?? {triggered: false, degree: 0};

@@ -2,7 +2,7 @@ import {DeliberationContext, onlyAgent, IChangeDetectionStrategy, StrategyResult
 import {AgentTileTransitionEstimator} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/estimators/AgentTileTransitionEstimator";
 
 class SelfAgentExitedParcelTileStrategy implements IChangeDetectionStrategy {
-    readonly name = 'SelfExitedParcelTile';
+    readonly name = 'self_agent_exited_parcel_tile';
 
     evaluate(context: DeliberationContext): StrategyResult {
         const fact = context.facts.get(AgentTileTransitionEstimator.EXITED_PARCEL_TILE) ?? {triggered: false, degree: 0};

@@ -4,13 +4,15 @@ import {
     PathfindingResult
 } from "@/agents/BDI_Agent/planning/pathfinding/IPathFinder";
 import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
-import {manhattanDistance, getNeighbors, positionsEqual, whichMoveDirection} from "@/agents/BDI_Agent/capabilities/utils";
+import {manhattanDistance, getNeighbors, positionsEqual, whichMoveDirection} from "@/agents/BDI_Agent/utils";
 import {MinPriorityQueue} from "@datastructures-js/priority-queue";
 
 
 const COST_TO_NEIGHBOR = 1;
 
 class AStarPathFinder implements IPathFinder {
+    readonly name: string = "A*_path_finder";
+    
     belief: Belief
 
     constructor(belief: Belief) {

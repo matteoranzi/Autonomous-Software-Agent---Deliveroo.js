@@ -2,7 +2,7 @@ import {DeliberationContext, excludingAgent, IChangeDetectionStrategy, StrategyR
 import {AgentTileTransitionEstimator} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/estimators/AgentTileTransitionEstimator";
 
 class RivalAgentEnteredDeliveryTileStrategy implements IChangeDetectionStrategy {
-    readonly name = 'RivalEnteredDeliveryTile';
+    readonly name = 'rival_agent_entered_delivery_tile';
 
     evaluate(context: DeliberationContext): StrategyResult {
         const fact = context.facts.get(AgentTileTransitionEstimator.ENTERED_DELIVERY_TILE) ?? {triggered: false, degree: 0};

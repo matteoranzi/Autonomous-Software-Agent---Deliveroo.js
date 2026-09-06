@@ -1,7 +1,7 @@
-import {FailedMoveResolution, IRecoverFailedActionStrategy} from "@/agents/BDI_Agent/planning/execution/IRecoverFailedActionStrategy";
+import {FailedMoveResolution, IRecoverFailedActionStrategy} from "@/agents/BDI_Agent/planning/execution/IRecoverFailedPlanStrategy";
 
-class RetryThenReplanOnFailedActionStrategy implements IRecoverFailedActionStrategy {
-    readonly name: string = "RetryThenReplanOnFailedAction";
+class RetryThenReplanOnFailedPlanStrategy implements IRecoverFailedActionStrategy {
+    readonly name: string = "RetryThenReplanOnFailedPlan";
 
     readonly maxRetries: number;
     private retries: number;
@@ -21,4 +21,4 @@ class RetryThenReplanOnFailedActionStrategy implements IRecoverFailedActionStrat
     }
 }
 
-export { RetryThenReplanOnFailedActionStrategy };
+export { RetryThenReplanOnFailedPlanStrategy };

@@ -2,7 +2,7 @@ import {DeliberationContext, excludingAgent, IChangeDetectionStrategy, StrategyR
 import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/estimators/ParcelCarriedByEstimator";
 
 class RivalAgentDroppedParcelStrategy implements IChangeDetectionStrategy {
-    readonly name = 'RivalAgentDroppedParcel';
+    readonly name = 'rival_agent_dropped_parcel';
 
     evaluate(context: DeliberationContext): StrategyResult {
         const fact = context.facts.get(ParcelCarriedByEstimator.DROPPED) ?? {triggered: false, degree: 0};
