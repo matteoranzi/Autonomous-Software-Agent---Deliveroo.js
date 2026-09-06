@@ -327,7 +327,7 @@ class Belief {
 
 
     // Blends transient-occupancy tolerance (e.g. a rival momentarily standing there) with staleness of the tile's last observation
-    positionWalkabilityLikelihood(position: Position, toleranceMs: number = 2000): boolean {
+    isPositionWalkabilityLikelihood(position: Position, toleranceMs: number = 2000): boolean {
         const WALKABILITY_LIKELIHOOD_THRESHOLD = 0.5;
 
         if (!this._isPositionInBoundsAndTerrainWalkable(position)) {

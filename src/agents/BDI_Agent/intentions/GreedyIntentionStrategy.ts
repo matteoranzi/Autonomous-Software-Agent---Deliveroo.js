@@ -4,6 +4,7 @@ import {Belief} from "@/agents/BDI_Agent/beliefs/Belief";
 import {PickupParcelDesire} from "@/agents/BDI_Agent/desires/PickupParcelDesire";
 import {DeliverParcelDesire} from "@/agents/BDI_Agent/desires/DeliverParcelDesire";
 import {ExploreParcelSpawningTileDesire} from "@/agents/BDI_Agent/desires/ExploreParcelSpawningTileDesire";
+import {pickHighestUtility} from "@/agents/BDI_Agent/intentions/utils";
 
 class GreedyIntentionStrategy implements IIntentionStrategy {
     readonly name: string = "greedy_intention";
@@ -37,10 +38,7 @@ class GreedyIntentionStrategy implements IIntentionStrategy {
         }
 
         // Helper function to find the desire with the highest utility in a given bucket.
-        const best = async (bucket: IDesire[]): Promise<IDesire> => {
-            const scored = await Promise.all(bucket.map(async (desire: IDesire) => ({desire, value: (await desire.evaluate()).utility})));
-            return scored.reduce((top, current) => current.value > top.value ? current : top).desire;
-        };
+        const best = async (bucket: IDesire[]): Promise<IDesire> => (await pickHighestUtility(bucket))!.desire;
 
         // At capacity: offload before anything else, even if there's still something to pick up or explore.
         if (carriedParcels >= this.carryingCapacity && deliverDesires.length > 0) {

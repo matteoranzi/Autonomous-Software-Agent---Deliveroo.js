@@ -6,7 +6,7 @@ import {Plan} from "@/agents/BDI_Agent/planning/Plan";
 
 class Planner {
     // Ordered list of pathfinding algorithms to fallback on if the previous one fails to find a path
-    private _pathFinders: IPathFinder[] = [];
+    private readonly _pathFinders: IPathFinder[] = [];
 
     //TODO: use strategy pattern to build array of pathfinders
     constructor(pathFinders: IPathFinder[]) {

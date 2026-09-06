@@ -31,10 +31,10 @@ async function main() {
 
 function setupTerminalUI(bdi_agent: BDI_Agent) {
     process.stdout.write('\x1b[?1049h\x1b[?25l');
-    setInterval(() => {
+    setInterval(async () => {
         readline.cursorTo(process.stdout, 0, 0);
         readline.clearScreenDown(process.stdout);
-        process.stdout.write(bdi_agent.toString());
+        process.stdout.write(await bdi_agent.toString());
     }, 50);
 }
 

@@ -6,7 +6,8 @@ import {
 import {Planner} from "@/agents/BDI_Agent/planning/Planner";
 import {Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
-import {desireIdentity, Intention} from "@/agents/BDI_Agent/intentions/Intention";
+import {Intention} from "@/agents/BDI_Agent/intentions/Intention";
+import {desireIdentity} from "@/agents/BDI_Agent/intentions/utils";
 
 class PlanExecutor {
     private readonly planner: Planner;

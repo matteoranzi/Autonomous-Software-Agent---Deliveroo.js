@@ -58,7 +58,7 @@ class DeliverParcelDesire implements IDesire {
         }
 
         if (this.belief.isAgentCarryingParcels(this.belief.me.id)
-            && this.belief.positionWalkabilityLikelihood(this.goal.position)) {
+            && this.belief.isPositionWalkabilityLikelihood(this.goal.position)) {
             return true;
         }
 

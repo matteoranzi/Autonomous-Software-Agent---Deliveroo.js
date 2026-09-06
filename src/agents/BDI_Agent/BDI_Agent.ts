@@ -22,6 +22,9 @@ import {
     CLEAN_MAP_MODE,
     FROZEN_SNAPSHOT_MODE
 } from "@/agents/BDI_Agent/planning/pathfinding/pddl/pddlPathfindingProblemGenerator";
+import {
+    SameKindHigherUtilityReconsideration
+} from "@/agents/BDI_Agent/intentions/reconsideration_policies/SameKindHigherUtilityReconsideration";
 
 enum AgentActions {
     PICKUP = "PICKUP",
@@ -33,8 +36,7 @@ enum AgentActions {
     MOVE_RIGHT = "RIGHT"
 }
 
-// TODO: exploration strategy: find a tile that maximizes the number of unknown tiles in the sensing radius, and move towards it. If there are multiple such tiles, choose the closest one. If there are no such tiles, choose a random tile that is not a wall and is not occupied by another agent.
-//  such exploration strategy in some scenarios should be preferred over pickup (e.g. in an area where there are directional tiles and so the agent will "look-ahead" and see if in other areas is there anything interesting)
+
 class BDI_Agent {
     private readonly _djsClient: DjsClientSocket;
     private readonly _appConfig: AgentConfig;
@@ -51,12 +53,6 @@ class BDI_Agent {
     private _executing = false;
     private _deliberating = false;
     private _deliberationPending = false;
-    private _deliberationDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-    // Sibling belief events for the same server tick (onYou, onSensing) arrive as separate,
-    // uncoordinated socket messages - this gives them a short window to both land before
-    // deliberation reads belief state, instead of racing against a partially-updated belief.
-    private static readonly DELIBERATION_DEBOUNCE_MS = 50;
 
     constructor(config: AgentConfig) {
         this._djsClient = DjsConnect(config.host, config.token);
@@ -79,7 +75,7 @@ class BDI_Agent {
 
     private async _run() {
         this.desiresGenerator = new DesiresGenerator(this.belief);
-        this.intention = new Intention(new GreedyIntentionStrategy(this.belief));
+        this.intention = new Intention(new GreedyIntentionStrategy(this.belief), new SameKindHigherUtilityReconsideration());
 
         this.planner = new Planner([
             new AStarPathFinder(this.belief),
@@ -98,7 +94,7 @@ class BDI_Agent {
         let desiresGenerationBackstopTimer: ReturnType<typeof setInterval> = setInterval(() => {
 
             this._deliberationCycle();
-        }, this._appConfig.backstopTimerMs) // TODO make this configurable
+        }, this._appConfig.backstopTimerMs)
 
         // Listen for relevant changes in the belief and update the desires accordingly.
         this.belief.onRelevantChangesForDesires((results : TriggeredStrategyResult[]) => {
@@ -115,7 +111,9 @@ class BDI_Agent {
     }
 
     private async _deliberationCycle(): Promise<void> {
+        // A trigger that arrives while a cycle is already running is remembered instead of being ignored.
         if (this._deliberating) {
+            this._deliberationPending = true;
             return;
         }
 
@@ -125,6 +123,12 @@ class BDI_Agent {
             await this.intention.deliberate(this.desiresGenerator.desires);
         } finally {
             this._deliberating = false;
+        }
+
+        if (this._deliberationPending) {
+            this._deliberationPending = false;
+
+            await this._deliberationCycle();
         }
 
         // Only start a new execution if there's something committed AND nothing is already running
@@ -174,13 +178,14 @@ class BDI_Agent {
         let pendingYou: Agent | null = null;
 
         this._djsClient.onSensing((sensing) => {
+            // IMPORTANT!!! The order of these two updates is important: updateDynamicBeliefs() must be called before updateMe()
+            this.belief.updateDynamicBeliefs(adaptSensingPayload(sensing, this._appConfig.maxAgentHistoryPositions));
+
             if (pendingYou !== null) {
                 const you = pendingYou;
                 pendingYou = null;
                 this.belief.updateMe(you);
             }
-
-            this.belief.updateDynamicBeliefs(adaptSensingPayload(sensing, this._appConfig.maxAgentHistoryPositions));
         })
 
         this._djsClient.onYou((you) => {
@@ -223,7 +228,7 @@ class BDI_Agent {
         }
     }
 
-    toString() {
+    async toString() {
         let bdi_agent_str = "\n*************************************************************\n";
         bdi_agent_str += "BDI_Agent: " + this.belief.me.id + "\n";
         bdi_agent_str += "*************************************************************\n\n";
@@ -234,7 +239,8 @@ class BDI_Agent {
         bdi_agent_str += "*** DESIRE ***\n\n";
         for (const desire of this.desiresGenerator.desires) {
             if (desire.goal.valid) {
-                bdi_agent_str += `  - ${desire.name} (goal: ${desire.goal.position.x},${desire.goal.position.y})\n`;
+                const evaluation = await desire.evaluate();
+                bdi_agent_str += `  - ${desire.name} (goal: ${desire.goal.position.x},${desire.goal.position.y}) [${evaluation.utility}]\n`;
             } else {
                 bdi_agent_str += `  - ${desire.name} (goal: [INVALID])\n`;
             }
@@ -249,7 +255,8 @@ class BDI_Agent {
         bdi_agent_str += "*** INTENTION ***\n\n";
         if (this.intention.committedDesire) {
             if (this.intention.committedDesire.goal.valid) {
-                bdi_agent_str += `  - ${this.intention.committedDesire.name} (goal: ${this.intention.committedDesire.goal.position.x},${this.intention.committedDesire.goal.position.y})\n`;
+                const evaluation = await this.intention.committedDesire.evaluate();
+                bdi_agent_str += `  - ${this.intention.committedDesire.name} (goal: ${this.intention.committedDesire.goal.position.x},${this.intention.committedDesire.goal.position.y}) [${evaluation.utility}]\n`;
             } else {
                 bdi_agent_str += `  - ${this.intention.committedDesire.name} (goal: [INVALID])\n`;
             }

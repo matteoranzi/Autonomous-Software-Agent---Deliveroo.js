@@ -19,15 +19,6 @@ class ExploreParcelSpawningTileDesire implements IDesire {
         this.goal = {valid: true, position: parcelSpawnerTilePosition, finalAction: null};
     }
 
-    // async evaluation(): Promise<IDesireEvaluation> {
-    //     if (this.evaluationCache) {
-    //         return this.evaluationCache;
-    //     }
-    //
-    //     this.evaluationCache = await this.evaluate();
-    //     return this.evaluationCache;
-    // }
-
     async evaluate(): Promise<IDesireEvaluation> {
         if (!this.goal.valid) {
             return {
