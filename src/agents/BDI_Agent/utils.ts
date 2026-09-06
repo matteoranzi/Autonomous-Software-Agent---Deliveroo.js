@@ -43,7 +43,10 @@ function whichMoveDirection(currentTile: Position, nextTile: Position, reverse =
 }
 
 
-function getNeighbors(belief: Belief, tile: Position): Position[] {
+// TODO inject a strategy for determining which neighbors are valid, e.g., static terrain vs. dynamic occupancy
+function getNeighbors(belief: Belief,
+                      tile: Position,
+                      tileWalkableStrategy: (position: Position) => boolean = (position) => belief.isPositionCurrentlyWalkable(position)): Position[] {
     const neighbors: Position[] = [];
 
     for (let dx = -1; dx <= 1; dx++) {
@@ -53,7 +56,7 @@ function getNeighbors(belief: Belief, tile: Position): Position[] {
             const neighborPosition: Position = {x: tile.x + dx, y: tile.y + dy};
 
             // Covers bounds, terrain walkability, and current occupancy by a rival agent or a crate.
-            if (!belief.isPositionCurrentlyWalkable(neighborPosition)) continue;
+            if (!tileWalkableStrategy(neighborPosition)) continue;
 
             const neighborTile = belief.map.grid[neighborPosition.x][neighborPosition.y];
             if (neighborTile.direction === TileDirection.UP    && dy === -1) continue; // current tile is above a one-way-up cell

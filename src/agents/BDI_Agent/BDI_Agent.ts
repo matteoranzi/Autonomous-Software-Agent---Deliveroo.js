@@ -17,6 +17,8 @@ import {Intention} from "@/agents/BDI_Agent/intentions/Intention";
 import {HighestScoreIntentionStrategy} from "@/agents/BDI_Agent/intentions/HighestScoreIntentionStrategy";
 
 import { DjsConnect } from "@matteoranzi/deliveroo-js-sdk/client";
+import {PDDL_PathFinder} from "@/agents/BDI_Agent/planning/pathfinding/pddl/PDDL_PathFinder";
+import {CLEAN_MAP_MODE} from "@/agents/BDI_Agent/planning/pathfinding/pddl/pddlPathfindingProblemGenerator";
 
 enum AgentActions {
     PICKUP = "PICKUP",
@@ -59,9 +61,7 @@ class BDI_Agent {
         this._run().catch((err) => {
             console.error(err);
             process.exit(2);
-        }).finally(() => {
-            console.log("BDI Agent run interrupted.");
-        });
+        }).finally(() => {});
 
         return ready;
     }
@@ -70,7 +70,10 @@ class BDI_Agent {
         this.desiresGenerator = new DesiresGenerator(this.belief);
         this.intention = new Intention(new HighestScoreIntentionStrategy());
 
-        this.planner = new Planner([new AStarPathFinder(this.belief)]);
+        this.planner = new Planner([
+            new AStarPathFinder(this.belief),
+            new PDDL_PathFinder(this.belief, CLEAN_MAP_MODE, this._appConfig.pddlSolverMaxTimeS),
+        ]);
         this.planExecutor = new PlanExecutor(
             this.planner,
             () => new ReplanThenAbortStrategy(new RetryThenAbortStrategy(0), 2), // TODO make retry/replan limits configurable

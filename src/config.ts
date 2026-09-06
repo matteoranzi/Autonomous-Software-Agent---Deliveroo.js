@@ -9,6 +9,7 @@ type AgentConfig = {
     showGridMapInUI: boolean
 
     backstopTimerMs: number;
+    pddlSolverMaxTimeS: number;
 }
 
 function requireEnv(name: string): string {
@@ -28,6 +29,7 @@ const agentConfig: AgentConfig = {
     enableTerminalUI: process.env.ENABLE_TERMINAL_UI === "true",
     showGridMapInUI: process.env.SHOW_GRID_MAP_IN_UI === "true",
     showHeatMapInUI: process.env.SHOW_HEATMAP_IN_UI === "true",
+    pddlSolverMaxTimeS: process.env.PDDL_PATHFINDIG_MAX_SOLVING_TIME_S ? parseInt(process.env.PDDL_PATHFINDIG_MAX_SOLVING_TIME_S) : 15,
 
     backstopTimerMs: process.env.DESIRES_GENERATION_BACKSTOP_TIMER_MS ? parseInt(process.env.DESIRES_GENERATION_BACKSTOP_TIMER_MS) : 1000,
 }

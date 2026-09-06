@@ -315,6 +315,10 @@ class Belief {
         return this._isPositionInBoundsAndTerrainWalkable(position) && !this._isPositionOccupied(position);
     }
 
+    isPositionStaticallyWalkable(position: Position): boolean {
+        return this._isPositionInBoundsAndTerrainWalkable(position);
+    }
+
     // Tolerates transient occupancy (e.g. a rival momentarily standing on the tile) for up to
     // toleranceMs before treating the position as genuinely unwalkable. Out-of-bounds/wall tiles
     // are never tolerated - only occupancy is transient.
