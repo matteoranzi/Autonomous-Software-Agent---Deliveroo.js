@@ -13,14 +13,19 @@ class Intention {
 
     // Single-minded commitment
     // TODO: ingestion of deliberation strategy
-    deliberate(desires: IDesire[]): IDesire | null {
+    //  e.g., Monte Carlo Tree Search (MCTS) to evaluate the best desire to commit to, based on the current belief, desires and current intention
+    deliberate(desires: IDesire[]): boolean {
         if (this.committedDesire?.isValid()) {
-            return this.committedDesire
+            return false;
         }
 
-        this.committedDesire = this._strategy.select(desires)[0] ?? null;
+        let newCommittedDesire = this._strategy.select(desires)[0] ?? null;
+        if (newCommittedDesire !== this.committedDesire) {
+            this.committedDesire = newCommittedDesire;
+            return true;
+        }
 
-        return this.committedDesire;
+        return false;
     }
 }
 

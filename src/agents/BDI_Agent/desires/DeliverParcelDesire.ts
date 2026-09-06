@@ -28,7 +28,7 @@ class DeliverParcelDesire implements IDesire {
 
         // TODO also consider stale information in the belief (maybe an agent is no longer in the position it was last seen in, but we haven't sensed it yet)
         if (this.belief.isAgentCarryingParcels(this.belief.me.id)
-            && this.belief.isPositionWalkableWithTolerance(this.goal.position)) {
+            && this.belief.isPositionCurrentlyWalkable(this.goal.position)) {
             return true;
         }
 

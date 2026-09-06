@@ -7,6 +7,8 @@ type AgentConfig = {
     enableTerminalUI: boolean;
     showHeatMapInUI: boolean;
     showGridMapInUI: boolean
+
+    backstopTimerMs: number;
 }
 
 function requireEnv(name: string): string {
@@ -26,6 +28,8 @@ const agentConfig: AgentConfig = {
     enableTerminalUI: process.env.ENABLE_TERMINAL_UI === "true",
     showGridMapInUI: process.env.SHOW_GRID_MAP_IN_UI === "true",
     showHeatMapInUI: process.env.SHOW_HEATMAP_IN_UI === "true",
+
+    backstopTimerMs: process.env.DESIRES_GENERATION_BACKSTOP_TIMER_MS ? parseInt(process.env.DESIRES_GENERATION_BACKSTOP_TIMER_MS) : 1000,
 }
 
 export {

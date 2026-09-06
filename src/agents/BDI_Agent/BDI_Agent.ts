@@ -51,72 +51,69 @@ class BDI_Agent {
     }
 
     async start(): Promise<void> {
-        let ready = this._initializeBDI_Agent().catch((err) => {
+        let ready = await this._initializeBelief().catch((err) => {
             console.error(err);
             process.exit(1);
+        });
+
+        this._run().catch((err) => {
+            console.error(err);
+            process.exit(2);
+        }).finally(() => {
+            console.log("BDI Agent run interrupted.");
         });
 
         return ready;
     }
 
-
-    private async _initializeBDI_Agent(): Promise<void> {
-        await this._initializeBelief();
-        await this._initializeDesireAndIntention();
-    }
-
-    private async _initializeDesireAndIntention() {
+    private async _run() {
         this.desiresGenerator = new DesiresGenerator(this.belief);
         this.intention = new Intention(new HighestScoreIntentionStrategy());
 
         this.planner = new Planner([new AStarPathFinder(this.belief)]);
         this.planExecutor = new PlanExecutor(
             this.planner,
-            () => new ReplanThenAbortStrategy(new RetryThenAbortStrategy(5), 2), // TODO make retry/replan limits configurable
+            () => new ReplanThenAbortStrategy(new RetryThenAbortStrategy(0), 2), // TODO make retry/replan limits configurable
             this.intention,
             (action) => this._emitAction(action),
             () => this.belief.me.position,
         );
 
-        // Generate initial desires and deliberate on them.
-        this.desiresGenerator.regenerate().filter()
-        this.intention.deliberate(this.desiresGenerator.desires);
-        this._tryStartExecution();
-
         // Backstop timer to ensure that desires are regenerated at least every second, even if no relevant changes are detected.
         let desiresGenerationBackstopTimer: ReturnType<typeof setInterval> = setInterval(() => {
-            this.desiresGenerator.regenerate().filter()
-            this.intention.deliberate(this.desiresGenerator.desires);
-            this._tryStartExecution();
-        }, 1000) // TODO make this configurable
+            this._deliberationCycle()
+        }, this._appConfig.backstopTimerMs);
 
         // Listen for relevant changes in the belief and update the desires accordingly.
         this.belief.onRelevantChangesForDesires((results : TriggeredStrategyResult[]) => {
             this._lastTriggeredStrategyResults = results;
 
-            // TODO: now that we have detected relevant changes, we should update the desires accordingly.
-            //  For now, we will just clear the desires and generate new ones.
-            this.desiresGenerator.regenerate().filter()
-            this.intention.deliberate(this.desiresGenerator.desires);
-            this._tryStartExecution();
+            this._deliberationCycle()
 
             // Reset the backstop timer since we have detected relevant changes and updated the desires.
             desiresGenerationBackstopTimer.refresh();
         });
+
+        // Generate initial desires and deliberate on them.
+        this._deliberationCycle()
     }
 
-    // Starts executing the committed desire if nothing is currently executing. If execution is
-    // already in flight, PlanExecutor itself detects a mid-flight commitment change and aborts -
-    // the next deliberation trigger (belief event, or the 1s backstop at worst) will pick up
-    // whatever is committed at that point.
-    private _tryStartExecution(): void {
-        if (this._executing || !this.intention.committedDesire) {
+    private _deliberationCycle() {
+        this.desiresGenerator.regenerate().filter()
+
+        // Deliberate on every cycle regardless of whether we're currently executing
+        // PlanExecutor's own interruption check depends on `committedDesire` staying live/up to date while a plan runs.
+        let intentionChanged = this.intention.deliberate(this.desiresGenerator.desires);
+
+        // Only start a new execution if the commitment actually changed AND nothing is already running
+        if (!intentionChanged || this._executing) {
             return;
         }
 
         this._executing = true;
         this.planExecutor.execute().finally(() => {
             this._executing = false;
+            this._deliberationCycle();
         });
     }
 

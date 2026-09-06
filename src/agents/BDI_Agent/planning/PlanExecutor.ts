@@ -51,7 +51,7 @@ class PlanExecutor {
 
         let i = 0;
         while (i < plan.actions.length) {
-            if (this.intention.committedDesire !== initialCommittedDesire) {
+            if (!this._isDesireStillCommittedIntention(initialCommittedDesire)) {
                 // The current desire has changed, so the agent must stop executing the plan
                 return false;
             }
