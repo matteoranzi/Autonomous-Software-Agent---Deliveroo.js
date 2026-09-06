@@ -1,4 +1,4 @@
-import {IIntentionStrategy} from "@/agents/BDI_Agent/intentions/IIntentionStrategy";
+import {IIntentionStrategy} from "@/agents/BDI_Agent/intentions/selection_strategies/IIntentionStrategy";
 import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
 import {Belief} from "@/agents/BDI_Agent/beliefs/Belief";
 import {PickupParcelDesire} from "@/agents/BDI_Agent/desires/PickupParcelDesire";

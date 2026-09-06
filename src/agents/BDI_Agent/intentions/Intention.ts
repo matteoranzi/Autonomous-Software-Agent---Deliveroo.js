@@ -1,5 +1,5 @@
 import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
-import {IIntentionStrategy} from "@/agents/BDI_Agent/intentions/IIntentionStrategy";
+import {IIntentionStrategy} from "@/agents/BDI_Agent/intentions/selection_strategies/IIntentionStrategy";
 
 import {
     IReconsiderationStrategy

@@ -1,7 +1,7 @@
 
 // Desires are re-instantiated from scratch every regenerate() cycle, so comparing them by
 // name + goal position instead, which is stable across regenerations.
-import {IIntentionStrategy} from "@/agents/BDI_Agent/intentions/IIntentionStrategy";
+import {IIntentionStrategy} from "@/agents/BDI_Agent/intentions/selection_strategies/IIntentionStrategy";
 import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
 
 function desireIdentity(desire: IDesire | null): string {
