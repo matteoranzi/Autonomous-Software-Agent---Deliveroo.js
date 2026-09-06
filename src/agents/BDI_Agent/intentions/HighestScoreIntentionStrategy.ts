@@ -7,7 +7,6 @@ class HighestScoreIntentionStrategy implements IIntentionStrategy {
     select(desires: IDesire[]): IDesire[] {
         return [...desires].sort((a, b) => b.estimateValue() - a.estimateValue());
     }
-
 }
 
 export { HighestScoreIntentionStrategy };

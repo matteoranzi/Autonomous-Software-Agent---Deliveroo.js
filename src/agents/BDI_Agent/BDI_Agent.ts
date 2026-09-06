@@ -79,23 +79,25 @@ class BDI_Agent {
             () => this.belief.me.position,
         );
 
+
         // Backstop timer to ensure that desires are regenerated at least every second, even if no relevant changes are detected.
         let desiresGenerationBackstopTimer: ReturnType<typeof setInterval> = setInterval(() => {
-            this._deliberationCycle()
-        }, this._appConfig.backstopTimerMs);
+
+            this._deliberationCycle();
+        }, this._appConfig.backstopTimerMs) // TODO make this configurable
 
         // Listen for relevant changes in the belief and update the desires accordingly.
         this.belief.onRelevantChangesForDesires((results : TriggeredStrategyResult[]) => {
             this._lastTriggeredStrategyResults = results;
 
-            this._deliberationCycle()
+            this._deliberationCycle();
 
             // Reset the backstop timer since we have detected relevant changes and updated the desires.
             desiresGenerationBackstopTimer.refresh();
         });
 
         // Generate initial desires and deliberate on them.
-        this._deliberationCycle()
+        this._deliberationCycle();
     }
 
     private _deliberationCycle() {
@@ -103,10 +105,10 @@ class BDI_Agent {
 
         // Deliberate on every cycle regardless of whether we're currently executing
         // PlanExecutor's own interruption check depends on `committedDesire` staying live/up to date while a plan runs.
-        let intentionChanged = this.intention.deliberate(this.desiresGenerator.desires);
+        this.intention.deliberate(this.desiresGenerator.desires);
 
         // Only start a new execution if the commitment actually changed AND nothing is already running
-        if (!intentionChanged || this._executing) {
+        if (!this.intention.committedDesire || this._executing) {
             return;
         }
 

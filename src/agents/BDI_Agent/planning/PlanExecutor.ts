@@ -6,7 +6,7 @@ import {
 import {Planner} from "@/agents/BDI_Agent/planning/Planner";
 import {Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
-import {Intention} from "@/agents/BDI_Agent/intentions/Intention";
+import {desireIdentity, Intention} from "@/agents/BDI_Agent/intentions/Intention";
 
 class PlanExecutor {
     private readonly planner: Planner;
@@ -85,7 +85,7 @@ class PlanExecutor {
     }
 
     private _isDesireStillCommittedIntention(desire: IDesire): boolean {
-        return desire.isValid() && this.intention.committedDesire === desire;
+        return desire.isValid() && desireIdentity(desire) === desireIdentity(this.intention.committedDesire);
     }
 }
 
