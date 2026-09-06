@@ -40,6 +40,12 @@ class GreedyIntentionStrategy implements IIntentionStrategy {
         // Helper function to find the desire with the highest utility in a given bucket.
         const best = async (bucket: IDesire[]): Promise<IDesire> => (await pickHighestUtility(bucket))!.desire;
 
+
+        // Room to carry more, and something available to grab.
+        if (pickupDesires.length > 0 && carriedParcels < this.carryingCapacity) {
+            return [await best(pickupDesires)];
+        }
+
         // At capacity: offload before anything else, even if there's still something to pick up or explore.
         if (carriedParcels >= this.carryingCapacity && deliverDesires.length > 0) {
             return [await best(deliverDesires)];

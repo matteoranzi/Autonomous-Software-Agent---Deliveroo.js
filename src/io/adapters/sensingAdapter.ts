@@ -13,6 +13,7 @@ export function adaptSensingPayload(sensing: IOSensing, maxAgentPositionsHistory
             .map((a) => new Agent(a.id, a.name, { x: Math.round(a.x), y: Math.round(a.y) }, a.score, a.penalty, maxAgentPositionsHistory)),
         parcels: sensing.parcels.map((p) => new Parcel(p.id, { x: Math.round(p.x), y: Math.round(p.y) }, p.carriedBy ?? null, p.reward)),
         crates: sensing.crates.map((c) => new Crate(c.id, { x: Math.round(c.x), y: Math.round(c.y)})),
+        observedPositions: sensing.positions.map((p) => ({ x: Math.round(p.x), y: Math.round(p.y) })),
     };
 }
 

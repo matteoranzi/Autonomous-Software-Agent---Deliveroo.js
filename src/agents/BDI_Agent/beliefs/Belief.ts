@@ -19,7 +19,7 @@ import {ChangeDetectionRunner} from "@/agents/BDI_Agent/beliefs/belief_changes_d
 type GameMap = { width: number, height: number, grid: Tile[][] };
 type Position = { x: number, y: number };
 
-type DynamicBelief = { agents: Agent[]; parcels: Parcel[], crates: Crate[] };
+type DynamicBelief = { agents: Agent[]; parcels: Parcel[], crates: Crate[], observedPositions: Position[] };
 
 type PlayerConfig = {
     movement_duration: number,
@@ -50,9 +50,9 @@ class Belief {
     me: Agent
     map: GameMap;
 
-    parcels: Map<string, Parcel>;
-    agents: Map<string, Agent>;
-    crates: Map<string, Crate>;
+    private readonly _parcels: Map<string, Parcel>;
+    private readonly _agents: Map<string, Agent>;
+    private readonly _crates: Map<string, Crate>;
 
     // List of positions of the tiles that are parcel spawners and parcel delivery, for pathfinding purposes.
     parcelSpawnerTiles: Position[];
@@ -65,13 +65,16 @@ class Belief {
     private readonly _changeDetectionRunner: ChangeDetectionRunner;
     private readonly _blockedSince: Map<string, number> = new Map();
 
+    // Positions observed by the last sensing event
+    private _observedPositionKeys: Set<string> = new Set();
+
     constructor(gameConfig: GameConfig, gameMap: GameMap, me: Agent, strategies: IChangeDetectionStrategy[] = new ChangeDetectionStrategyBuilder().withDefaults().build()) {
         this.gameConfig = gameConfig;
         this.me = me;
 
-        this.parcels = new Map<string, Parcel>();
-        this.agents = new Map<string, Agent>();
-        this.crates = new Map<string, Crate>();
+        this._parcels = new Map<string, Parcel>();
+        this._agents = new Map<string, Agent>();
+        this._crates = new Map<string, Crate>();
 
         this.parcelSpawnerTiles = new Array<Position>();
         this.parcelDeliveryTiles = new Array<Position>();
@@ -80,6 +83,18 @@ class Belief {
         this._changeDetectionRunner = new ChangeDetectionRunner(strategies);
 
         this._setupGameMap(gameMap);
+    }
+
+    get parcels() {
+        return this._parcels;
+    }
+
+    get agents() {
+        return this._agents;
+    }
+
+    get crates() {
+        return this._crates;
     }
 
     private _setupGameMap(gameMap: GameMap): void {
@@ -100,10 +115,10 @@ class Belief {
         if (this.gameConfig.parcel.decay_interval < Infinity) {
             this.parcelsDecayTimer = setInterval(() => {
                 const parcelsDiff = emptyParcelsDiff();
-                for (const parcel of this.parcels.values()) {
+                for (const parcel of this._parcels.values()) {
                     if (parcel.reward < 1) {
                         parcelsDiff.vanished.push({id: parcel.id, reason: ParcelVanishReason.Decayed, carriedBy: parcel.carriedBy, position: parcel.position});
-                        this.parcels.delete(parcel.id);
+                        this._parcels.delete(parcel.id);
                     } else {
                         parcel.reward--;
                     }
@@ -135,7 +150,7 @@ class Belief {
         this.map.grid.forEach((column, x) => {
             column.forEach((tile, y) => {
                 if (tile.isCrateSpawner) {
-                    this.crates.set(this._seedCrateKey({x, y}), new Crate(null, {x, y}));
+                    this._crates.set(this._seedCrateKey({x, y}), new Crate(null, {x, y}));
                 }
             });
         });
@@ -178,17 +193,17 @@ class Belief {
     }
 
     private _updateLastObservedDynamicBeliefs(): void {
-        this.parcels.forEach((parcel) => {
+        this._parcels.forEach((parcel) => {
             if (this.isInsideObservingArea(parcel.position)) {
                 parcel.lastTimeObserved = Date.now();
             }
         });
-        this.agents.forEach((agent) => {
+        this._agents.forEach((agent) => {
             if (this.isInsideObservingArea(agent.position)) {
                 agent.lastTimeObserved = Date.now();
             }
         });
-        this.crates.forEach((crate) => {
+        this._crates.forEach((crate) => {
             if (this.isInsideObservingArea(crate.position)) {
                 crate.lastTimeObserved = Date.now();
             }
@@ -196,6 +211,8 @@ class Belief {
     }
 
     updateDynamicBeliefs(dynamicBelief: DynamicBelief): void {
+        this._observedPositionKeys = new Set(dynamicBelief.observedPositions.map(positionKey));
+
         const parcelsDiff = this.updateParcels(dynamicBelief.parcels);
         const agentsDiff = this.updateAgents(dynamicBelief.agents);
         const cratesDiff = this.updateCrates(dynamicBelief.crates);
@@ -213,7 +230,7 @@ class Belief {
         const diff = emptyAgentsDiff();
 
         for (const sensedAgent of sensedAgents) {
-            const existingAgent = this.agents.get(sensedAgent.id);
+            const existingAgent = this._agents.get(sensedAgent.id);
             if (existingAgent) {
                 const previousPosition = existingAgent.position;
                 existingAgent.update(sensedAgent);
@@ -223,7 +240,7 @@ class Belief {
                     diff.moved.push({agentId: sensedAgent.id, from: previousPosition, to: currentPosition});
                 }
             } else {
-                this.agents.set(sensedAgent.id, sensedAgent);
+                this._agents.set(sensedAgent.id, sensedAgent);
                 diff.moved.push({agentId: sensedAgent.id, from: null, to: sensedAgent.position});
             }
         }
@@ -239,27 +256,27 @@ class Belief {
                 continue; // sensed crates always carry a real id; a null one would mean malformed sensing data
             }
 
-            const existingCrate = this.crates.get(sensedCrate.id);
+            const existingCrate = this._crates.get(sensedCrate.id);
             if (existingCrate && !positionsEqual(existingCrate.position, sensedCrate.position)) {
                 diff.moved.push({crateId: sensedCrate.id, from: existingCrate.position, to: sensedCrate.position});
             }
 
             // This step is used to confirm the existence of never observed crates that were seeded from the map's crate spawner tiles.
             // If a crate is sensed at a position where a seed was placed, the seed is removed and the sensed crate is added instead.
-            this.crates.delete(this._seedCrateKey(sensedCrate.position)); // promote a matching seed instead of duplicating it
-            this.crates.set(sensedCrate.id, sensedCrate);
+            this._crates.delete(this._seedCrateKey(sensedCrate.position)); // promote a matching seed instead of duplicating it
+            this._crates.set(sensedCrate.id, sensedCrate);
         }
 
         // Unconfirmed seed guesses are the only entries ever discarded: if a seed's position is
         // currently observed and no crate showed up there, the crate already moved elsewhere
         // before we arrived and the guess is simply wrong.
-        this.crates.forEach((believedCrate: Crate, key: string) => {
+        this._crates.forEach((believedCrate: Crate, key: string) => {
             if (believedCrate.id === null
                 && this.isInsideObservingArea(believedCrate.position)
                 && !sensedCrates.some((c) => positionsEqual(c.position, believedCrate.position)))
             {
                 diff.discardedSeedPositions.push(believedCrate.position);
-                this.crates.delete(key);
+                this._crates.delete(key);
             }
         })
 
@@ -270,22 +287,22 @@ class Belief {
         const diff = emptyParcelsDiff();
 
         for (const sensedParcel of sensedParcels) {
-            let parcel = this.parcels.get(sensedParcel.id);
+            let parcel = this._parcels.get(sensedParcel.id);
             if (!parcel) {
                 diff.newIds.push(sensedParcel.id);
             } else if (parcel.carriedBy !== sensedParcel.carriedBy) {
                 diff.carriedByChanged.push({id: sensedParcel.id, from: parcel.carriedBy, to: sensedParcel.carriedBy});
             }
 
-            this.parcels.set(sensedParcel.id, sensedParcel);
+            this._parcels.set(sensedParcel.id, sensedParcel);
         }
 
 
         // Remove stale parcels believed to exist in the current observing area, but that are no more present.
-        this.parcels.forEach((believedParcel: Parcel) => {
+        this._parcels.forEach((believedParcel: Parcel) => {
             if (this.isInsideObservingArea(believedParcel.position) && !sensedParcels.some((p) => p.id === believedParcel.id)) {
                 diff.vanished.push({id: believedParcel.id, reason: ParcelVanishReason.Unobserved, carriedBy: believedParcel.carriedBy, position: believedParcel.position});
-                this.parcels.delete(believedParcel.id);
+                this._parcels.delete(believedParcel.id);
             }
         })
 
@@ -309,12 +326,12 @@ class Belief {
 
     private _isPositionOccupied(position: Position): boolean {
         // Check if any other agent is currently occupying the position
-        if ([...this.agents.values()].some((agent) => agent.id !== this.me.id && positionsEqual(agent.position, position))) {
+        if ([...this._agents.values()].some((agent) => agent.id !== this.me.id && positionsEqual(agent.position, position))) {
             return true;
         }
 
         // Check if any crate is currently occupying the position
-        return [...this.crates.values()].some((crate) => positionsEqual(crate.position, position));
+        return [...this._crates.values()].some((crate) => positionsEqual(crate.position, position));
     }
 
     isPositionCurrentlyWalkable(position: Position): boolean {
@@ -353,11 +370,11 @@ class Belief {
     }
 
     isAgentCarryingParcels(agentId: string): boolean {
-        return ([...this.parcels.values()].some((parcel) => parcel.carriedBy === agentId));
+        return ([...this._parcels.values()].some((parcel) => parcel.carriedBy === agentId));
     }
 
     isInsideObservingArea = (position: Position): boolean => {
-        return Math.abs(this.me.position.x - position.x) + Math.abs(this.me.position.y - position.y) <= this.gameConfig.agent.observation_distance
+        return this._observedPositionKeys.has(positionKey(position));
     }
 
     toString(showGridMap: boolean = false, showHeatMap: boolean = false): string {
@@ -396,7 +413,7 @@ class Belief {
     private _parcelsToString(): string {
         let parcelsString = 'Parcels:\n';
         let now = Date.now();
-        const sortedParcels = [...this.parcels.values()].sort((a, b) => b.reward - a.reward);
+        const sortedParcels = [...this._parcels.values()].sort((a, b) => b.reward - a.reward);
         for (const parcel of sortedParcels) {
             let timeSinceUpdate = ((now - parcel.lastTimeObserved) / 1000).toFixed(2);
             parcelsString += `  - Parcel ${parcel.id}: Position (${parcel.position.x}, ${parcel.position.y}), Carried by: ${parcel.carriedBy}, Reward: ${parcel.reward}, Time since update: ${timeSinceUpdate}s\n`;
@@ -408,7 +425,7 @@ class Belief {
     private _agentsToString(): string {
         let agentsString = 'Agents:\n';
         let now = Date.now();
-        const sortedAgents = [...this.agents.values()].sort((a, b) => b.lastTimeObserved - a.lastTimeObserved);
+        const sortedAgents = [...this._agents.values()].sort((a, b) => b.lastTimeObserved - a.lastTimeObserved);
         for (const agent of sortedAgents) {
             let timeSinceUpdate = ((now - agent.lastTimeObserved) / 1000).toFixed(2);
             let directions = agent.historyDirections(3).map((dir) => dir.toString()).join(' <- ');
@@ -425,7 +442,7 @@ class Belief {
 
         // Total reward of parcels at each position, indexed as "x,y" (for visualization purposes)
         const rewardByPosition = new Map<string, number>();
-        this.parcels.forEach((parcel) => {
+        this._parcels.forEach((parcel) => {
             const key = `${parcel.position.x},${parcel.position.y}`;
             rewardByPosition.set(key, (rewardByPosition.get(key) ?? 0) + parcel.reward);
         });
@@ -441,13 +458,13 @@ class Belief {
                     tileInfo = "🏎 "; // Highlight the agent's position
                 }
 
-                this.agents.forEach((agent) => {
+                this._agents.forEach((agent) => {
                     if (positionsEqual(agent.position, {x, y})) {
                         tileInfo = "🐌"; // Highlight other agents' positions
                     }
                 })
 
-                this.crates.forEach((crate) => {
+                this._crates.forEach((crate) => {
                     if (positionsEqual(crate.position, {x, y})) {
                         if (crate.id === null) {
                             tileInfo = "⚙️"; // Highlight unconfirmed crates' positions

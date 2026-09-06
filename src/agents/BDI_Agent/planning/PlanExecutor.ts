@@ -33,10 +33,7 @@ class PlanExecutor {
         this.getCurrentPosition = getCurrentPosition;
     }
 
-    // FIXME: Do we need a way to interrupt the execution of a plan? For example, if a new desire is added that is more important than the current one, should we stop executing the current plan and start planning for the new desire?
     async execute(): Promise<boolean> {
-        // FIXME: This check is problematic if the planning process takes a long time, because the desire might change during the planning process.
-        //  An external abort signal might be required.
         const initialCommittedDesire: IDesire | null = this.intention.committedDesire;
         if (!initialCommittedDesire) {
             return false;
