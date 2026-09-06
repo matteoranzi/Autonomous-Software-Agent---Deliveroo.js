@@ -1,6 +1,7 @@
 import {Goal, IDesire, IDesireEvaluation} from "./IDesire";
 import {Belief} from "@/agents/BDI_Agent/beliefs/Belief";
 import {positionsEqual} from "@/agents/BDI_Agent/capabilities/utils";
+import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
 
 class PickupParcelDesire implements IDesire {
     readonly name: string = "PickupParcelDesire";
@@ -14,7 +15,7 @@ class PickupParcelDesire implements IDesire {
         this.belief = belief;
         let parcel = this.belief.parcels.get(this.parcelId);
 
-        this.goal = parcel ? {valid: true, position: parcel.position} : {valid: false};
+        this.goal = parcel ? {valid: true, position: parcel.position, finalAction: AgentActions.PICKUP} : {valid: false};
     }
 
     estimateValue(): number {

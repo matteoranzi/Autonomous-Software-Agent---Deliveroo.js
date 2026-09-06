@@ -1,6 +1,8 @@
 import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
+import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
 
-type Goal = {valid: true, position: Position} | {valid: false};
+type Goal = {valid: true, position: Position, finalAction: AgentActions | null}
+    | {valid: false};
 
 interface IDesire {
     readonly name: string;
@@ -27,4 +29,4 @@ interface IDesireEvaluation {
     expectedReward: number;
 }
 
-export {IDesire, IDesireEvaluation, Goal}
+export {IDesire, IDesireEvaluation, Goal }

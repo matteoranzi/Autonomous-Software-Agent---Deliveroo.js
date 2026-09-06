@@ -15,6 +15,16 @@ import {HighestScoreIntentionStrategy} from "@/agents/BDI_Agent/intentions/Highe
 
 import { DjsConnect } from "@matteoranzi/deliveroo-js-sdk/client";
 
+enum AgentActions {
+    PICKUP = "PICKUP",
+    DROP = "DROP",
+
+    MOVE_UP = "UP",
+    MOVE_DOWN = "DOWN",
+    MOVE_LEFT = "LEFT",
+    MOVE_RIGHT = "RIGHT"
+}
+
 // TODO: exploration strategy: find a tile that maximizes the number of unknown tiles in the sensing radius, and move towards it. If there are multiple such tiles, choose the closest one. If there are no such tiles, choose a random tile that is not a wall and is not occupied by another agent.
 //  such exploration strategy in some scenarios should be preferred over pickup (e.g. in an area where there are directional tiles and so the agent will "look-ahead" and see if in other areas is there anything interesting)
 class BDI_Agent {
@@ -140,6 +150,17 @@ class BDI_Agent {
         });
     }
 
+    private async _emitAction(action: AgentActions): Promise<boolean> {
+        switch (action) {
+            case AgentActions.MOVE_UP: return !!(await this._djsClient.emitMove("up"));
+            case AgentActions.MOVE_DOWN: return !!(await this._djsClient.emitMove("down"));
+            case AgentActions.MOVE_LEFT: return !!(await this._djsClient.emitMove("left"));
+            case AgentActions.MOVE_RIGHT: return !!(await this._djsClient.emitMove("right"));
+            case AgentActions.PICKUP: return (await this._djsClient.emitPickup()).length > 0;
+            case AgentActions.DROP: return (await this._djsClient.emitPutdown()).length > 0;
+        }
+    }
+
     toString() {
         let bdi_agent_str = "\n*************************************************************\n";
         bdi_agent_str += "BDI_Agent: " + this.belief.me.id + "\n";
@@ -179,4 +200,4 @@ class BDI_Agent {
     }
 }
 
-export {BDI_Agent}
+export {BDI_Agent, AgentActions}

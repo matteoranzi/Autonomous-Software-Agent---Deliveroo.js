@@ -1,5 +1,6 @@
 import {Goal, IDesire, IDesireEvaluation} from "./IDesire";
 import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
+import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
 
 class DeliverParcelDesire implements IDesire {
     readonly name: string = "DeliverParcelDesire";
@@ -9,7 +10,7 @@ class DeliverParcelDesire implements IDesire {
 
     constructor(belief: Belief, deliveryTilePosition: Position) {
         this.belief = belief;
-        this.goal = {valid: true, position: deliveryTilePosition};
+        this.goal = {valid: true, position: deliveryTilePosition, finalAction: AgentActions.DROP};
     }
 
     estimateValue(): number {

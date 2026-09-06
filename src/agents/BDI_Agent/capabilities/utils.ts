@@ -1,6 +1,6 @@
 import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {TileDirection} from "@/agents/BDI_Agent/beliefs/primitives/Tile";
-import {MoveDirection} from "@/agents/BDI_Agent/planning/pathfinding/IPathFinder";
+import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
 
 /**
  * Calculates the Manhattan distance between two points.
@@ -29,15 +29,15 @@ function positionsEqual(pointA: Position, pointB: Position): boolean {
  * Determines the cardinal direction of travel from currentTile to nextTile.
  * Returns null if the two tiles aren't exactly one cardinal step apart.
  */
-function whichMoveDirection(currentTile: Position, nextTile: Position, reverse = false): MoveDirection | null {
+function whichMoveDirection(currentTile: Position, nextTile: Position, reverse = false): AgentActions | null {
     if (reverse) {
         [currentTile, nextTile] = [nextTile, currentTile];
     }
 
-    if (currentTile.x === nextTile.x && currentTile.y < nextTile.y) return MoveDirection.UP
-    if (currentTile.x === nextTile.x && currentTile.y > nextTile.y) return MoveDirection.DOWN;
-    if (currentTile.x < nextTile.x && currentTile.y === nextTile.y) return MoveDirection.RIGHT;
-    if (currentTile.x > nextTile.x && currentTile.y === nextTile.y) return MoveDirection.LEFT;
+    if (currentTile.x === nextTile.x && currentTile.y < nextTile.y) return AgentActions.MOVE_UP
+    if (currentTile.x === nextTile.x && currentTile.y > nextTile.y) return AgentActions.MOVE_DOWN;
+    if (currentTile.x < nextTile.x && currentTile.y === nextTile.y) return AgentActions.MOVE_RIGHT;
+    if (currentTile.x > nextTile.x && currentTile.y === nextTile.y) return AgentActions.MOVE_LEFT;
 
     return null;
 }

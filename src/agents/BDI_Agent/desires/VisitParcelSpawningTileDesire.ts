@@ -2,6 +2,7 @@
 
 import {Goal, IDesire, IDesireEvaluation} from "@/agents/BDI_Agent/desires/IDesire";
 import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
+import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
 
 class VisitParcelSpawningTileDesire implements IDesire{
     readonly name: string = "VisitParcelSpawningTileDesire";
@@ -11,7 +12,7 @@ class VisitParcelSpawningTileDesire implements IDesire{
 
     constructor(belief: Belief, parcelSpawnerTilePosition: Position) {
         this.belief = belief;
-        this.goal = {valid: true, position: parcelSpawnerTilePosition};
+        this.goal = {valid: true, position: parcelSpawnerTilePosition, finalAction: null};
     }
 
     estimateValue(): number {

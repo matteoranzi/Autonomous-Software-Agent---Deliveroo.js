@@ -1,11 +1,5 @@
 import {Position, Belief} from "@/agents/BDI_Agent/beliefs/Belief";
-
-enum MoveDirection {
-    UP = "UP",
-    DOWN = "DOWN",
-    LEFT = "LEFT",
-    RIGHT = "RIGHT"
-}
+import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
 
 type NavigationPath = {
     start: Position,
@@ -14,7 +8,7 @@ type NavigationPath = {
     path: {
         from: Position,
         to: Position,
-        action: MoveDirection,
+        action: AgentActions,
     }[]
 }
 
@@ -26,4 +20,4 @@ interface IPathFinder {
     findPath(start: Position, goal: Position): Promise<PathfindingResult>;
 }
 
-export {IPathFinder, PathfindingResult, NavigationPath, MoveDirection};
+export {IPathFinder, PathfindingResult, NavigationPath};
