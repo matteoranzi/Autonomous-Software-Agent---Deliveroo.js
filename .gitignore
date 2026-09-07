@@ -7,4 +7,6 @@ dist/
 .claude/
 .vscode/
 
+.DS_Store
+
 
