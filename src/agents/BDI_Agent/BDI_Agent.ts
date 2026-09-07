@@ -26,6 +26,10 @@ import {
     SameKindHigherUtilityReconsideration
 } from "@/agents/BDI_Agent/intentions/reconsideration_policies/SameKindHigherUtilityReconsideration";
 import {MCTSIntentionStrategy} from "@/agents/BDI_Agent/intentions/selection_strategies/MCTSIntentionStrategy";
+import {
+    OpenMindedCommitmentStrategy
+} from "@/agents/BDI_Agent/intentions/reconsideration_policies/OpenMindedCommitmentStrategy";
+import {FuzzyDesirabilityScorer} from "@/agents/BDI_Agent/intentions/fuzzy_logic/FuzzyDesirabilityScorer";
 
 enum AgentActions {
     PICKUP = "PICKUP",
@@ -76,7 +80,7 @@ class BDI_Agent {
 
     private async _run() {
         this.desiresGenerator = new DesiresGenerator(this.belief);
-        this.intention = new Intention(new MCTSIntentionStrategy(this.belief), new SameKindHigherUtilityReconsideration());
+        this.intention = new Intention(new MCTSIntentionStrategy(this.belief), new OpenMindedCommitmentStrategy(this.belief));
         // this.intention = new Intention(new GreedyIntentionStrategy(this.belief), new SameKindHigherUtilityReconsideration());
 
         this.planner = new Planner([
@@ -153,6 +157,7 @@ class BDI_Agent {
 
         this.belief = await this._createInitialBelief();
         console.log("Belief initialized");
+        console.log("[CALIBRATE] gameConfig:", JSON.stringify(this.belief.gameConfig), "mapSize:", `${this.belief.map.width}x${this.belief.map.height}`);
 
         this._wireSensingEvents();
     }
@@ -257,8 +262,9 @@ class BDI_Agent {
         bdi_agent_str += "*** INTENTION ***\n\n";
         if (this.intention.committedDesire) {
             if (this.intention.committedDesire.goal.valid) {
+                let fuzzyScorer = new FuzzyDesirabilityScorer(this.belief);
                 const evaluation = await this.intention.committedDesire.evaluate();
-                bdi_agent_str += `  - ${this.intention.committedDesire.name} (goal: ${this.intention.committedDesire.goal.position.x},${this.intention.committedDesire.goal.position.y}) [${evaluation.utility}]\n`;
+                bdi_agent_str += `  - ${this.intention.committedDesire.name} (goal: ${this.intention.committedDesire.goal.position.x},${this.intention.committedDesire.goal.position.y}) [fuzzyScore: ${fuzzyScorer.score(evaluation)}]\n`;
             } else {
                 bdi_agent_str += `  - ${this.intention.committedDesire.name} (goal: [INVALID])\n`;
             }

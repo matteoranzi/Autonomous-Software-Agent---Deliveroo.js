@@ -4,6 +4,9 @@ import {Goal, IDesire, IDesireEvaluation, PRIORITY, DesireCategory} from "@/agen
 import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {CostEstimator} from "@/agents/BDI_Agent/planning/CostEstimator";
 
+// TODO calibrate alongside the fuzzy scorer's REWARD_* breakpoints
+const STALENESS_SCALE_MS = 1000;
+
 class ObserveParcelSpawningTileDesire implements IDesire {
     readonly name: string = "explore_parcel_spawning_tile";
     readonly category: DesireCategory = DesireCategory.EXPLORE;
@@ -45,16 +48,16 @@ class ObserveParcelSpawningTileDesire implements IDesire {
         const costEstimator = new CostEstimator(this.belief);
         const estimatedCost = await costEstimator.estimateCost(this.belief.me.position, this.goal.position);
 
-        // Grows the longer this tile has gone unobserved - a benefit/urgency signal, not a cost.
+
         const age = Date.now() - tile.lastTimeObserved;
-        const staleness = Math.pow(2, age / 900);
+        const staleness = Math.log(age / STALENESS_SCALE_MS);
 
         return {
             utility: staleness,
             estimatedCost: estimatedCost,
             risk: 0,
             urgency: PRIORITY.LOW,
-            expectedReward: 0,
+            expectedReward: staleness,
             category: this.name
         };
     }

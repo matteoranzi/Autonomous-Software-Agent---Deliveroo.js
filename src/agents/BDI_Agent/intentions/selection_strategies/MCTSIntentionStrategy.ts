@@ -3,6 +3,7 @@ import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
 import {Belief} from "@/agents/BDI_Agent/beliefs/Belief";
 import {SimulationState} from "@/agents/BDI_Agent/intentions/selection_strategies/mcts/SimulationState";
 import {CostEstimator} from "@/agents/BDI_Agent/planning/CostEstimator";
+import {FuzzyDesirabilityScorer} from "@/agents/BDI_Agent/intentions/fuzzy_logic/FuzzyDesirabilityScorer";
 import {MCTSNode} from "@/agents/BDI_Agent/intentions/selection_strategies/mcts/MCTSNode";
 import {
     backpropagate,
@@ -19,7 +20,7 @@ class MCTSIntentionStrategy implements IIntentionStrategy {
     private readonly maxDepth: number;
     private readonly explorationConstant: number;
 
-    constructor(belief: Belief, iterations: number = 100, maxDepth: number = 5, explorationConstant: number = Math.SQRT2) {
+    constructor(belief: Belief, iterations: number = 50, maxDepth: number = 5, explorationConstant: number = Math.SQRT2) {
         this.belief = belief;
         this.iterations = iterations;
         this.maxDepth = maxDepth;
@@ -45,6 +46,7 @@ class MCTSIntentionStrategy implements IIntentionStrategy {
         }
 
         const costEstimator = new CostEstimator(this.belief);
+        const scorer = new FuzzyDesirabilityScorer(this.belief);
         const root = new MCTSNode(rootState, null, null, desires);
 
         for (let i = 0; i < this.iterations; i++) {
@@ -57,11 +59,11 @@ class MCTSIntentionStrategy implements IIntentionStrategy {
 
             // Expansion: only reached when node still has untried actions and isn't depth-capped
             if (!node.isFullyExpanded && node.state.visited.size < this.maxDepth) {
-                node = await expand(node, desires, costEstimator);
+                node = await expand(node, desires, costEstimator, scorer);
             }
 
             // Simulation: random rollout from wherever Selection / Expansion landed
-            const reward = await rollout(node.state, desires, costEstimator, this.maxDepth);
+            const reward = await rollout(node.state, desires, costEstimator, scorer, this.maxDepth);
 
             backpropagate(node, reward);
         }
@@ -69,6 +71,16 @@ class MCTSIntentionStrategy implements IIntentionStrategy {
         if (root.children.length === 0) {
             return [];
         }
+
+        // Calibration instrumentation - visit distribution across root children tells us whether
+        // explorationConstant over/under-exploits relative to the iteration budget.
+        const sorted = [...root.children].sort((a, b) => b.visits - a.visits);
+        const totalVisits = sorted.reduce((sum, c) => sum + c.visits, 0);
+        console.log("[MCTS-CALIBRATE]", JSON.stringify({
+            rootChildren: root.children.length,
+            totalVisits,
+            top3: sorted.slice(0, 3).map((c) => ({desire: c.desireTaken?.name, visits: c.visits, avgReward: Number(c.averageReward.toFixed(2))})),
+        }));
 
         // Robust child: most-visited, not highest average reward
         const bestChild = root.children.reduce((best, child) => child.visits > best.visits ? child : best);

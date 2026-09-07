@@ -49,7 +49,7 @@ class PickupParcelDesire implements IDesire {
         const estimatedCost = await costEstimator.estimateCost(this.belief.me.position, this.goal.position);
         const expectedReward = parcel.reward;
 
-        desireEvaluation["utility"] = Math.log(expectedReward) / Math.log(estimatedCost + 1);
+        desireEvaluation["utility"] = expectedReward / (estimatedCost + 1);
         desireEvaluation["estimatedCost"] = estimatedCost;
         desireEvaluation["expectedReward"] = expectedReward;
 

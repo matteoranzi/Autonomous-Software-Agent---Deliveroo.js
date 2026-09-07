@@ -10,22 +10,12 @@ class DeliverParcelDesire implements IDesire {
     goal: Goal;
 
     private readonly belief: Belief;
-    private evaluationCache: IDesireEvaluation | null = null;
 
 
     constructor(belief: Belief, deliveryTilePosition: Position) {
         this.belief = belief;
         this.goal = {valid: true, position: deliveryTilePosition, finalAction: AgentActions.DROP};
     }
-
-    // async evaluate(): Promise<IDesireEvaluation> {
-    //     // if (this.evaluationCache) {
-    //     //     return this.evaluationCache;
-    //     // }
-    //
-    //     this.evaluationCache = await this.evaluate();
-    //     return this.evaluationCache;
-    // }
 
     async evaluate(): Promise<IDesireEvaluation> {
         if (!this.goal.valid) {
@@ -43,12 +33,18 @@ class DeliverParcelDesire implements IDesire {
         const costEstimator = new CostEstimator(this.belief);
         const estimatedCost = await costEstimator.estimateCost(this.belief.me.position, this.goal.position);
 
+        // The actual payoff of delivering: the sum of rewards of everything currently carried.
+        let expectedReward = 0;
+        for (const parcel of this.belief.parcels.values()) {
+            if (parcel.carriedBy === this.belief.me.id) expectedReward += parcel.reward;
+        }
+
         return {
             utility: -estimatedCost,
             estimatedCost: estimatedCost,
             risk: 0,
-            urgency: PRIORITY.HIGH,
-            expectedReward: 0,
+            urgency: PRIORITY.MEDIUM,
+            expectedReward,
             category: this.name
         };
     }

@@ -1,5 +1,6 @@
 import {applyAction, MCTSNode} from "@/agents/BDI_Agent/intentions/selection_strategies/mcts/MCTSNode";
 import {CostEstimator} from "@/agents/BDI_Agent/planning/CostEstimator";
+import {FuzzyDesirabilityScorer} from "@/agents/BDI_Agent/intentions/fuzzy_logic/FuzzyDesirabilityScorer";
 import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
 import {
     availableActions,
@@ -20,14 +21,14 @@ function selectChild(node: MCTSNode, explorationConstant: number) : MCTSNode {
     })
 }
 
-async function expand(node: MCTSNode, allDesires: IDesire[], costEstimator: CostEstimator): Promise<MCTSNode> {
+async function expand(node: MCTSNode, allDesires: IDesire[], costEstimator: CostEstimator, scorer: FuzzyDesirabilityScorer): Promise<MCTSNode> {
     const desire = node.untriedActions.pop();
 
     if (!desire) {
         throw new Error("expand: called on a node with no untried actions. The caller should check node.isFullyExpanded first.");
     }
 
-    const childState = await applyAction(node.state, desire, costEstimator);
+    const childState = await applyAction(node.state, desire, costEstimator, scorer);
     const child = new MCTSNode(childState, desire, node, allDesires);
     node.children.push(child);
 
@@ -37,7 +38,7 @@ async function expand(node: MCTSNode, allDesires: IDesire[], costEstimator: Cost
 
 // Random rollout simulation from startState until maxDepth.
 // Deliveroo game has no terminal state, so no terminal-state concept needed.
-async function rollout(startState: SimulationState, allDesires: IDesire[], costEstimator: CostEstimator, maxDepth: number): Promise<number> {
+async function rollout(startState: SimulationState, allDesires: IDesire[], costEstimator: CostEstimator, scorer: FuzzyDesirabilityScorer, maxDepth: number): Promise<number> {
     let state = startState;
 
     // Depth tracked via visited.size since it grows one per step taken from the root
@@ -48,7 +49,7 @@ async function rollout(startState: SimulationState, allDesires: IDesire[], costE
         }
 
         const randomAction = actions[Math.floor(Math.random() * actions.length)];
-        state = await applyAction(state, randomAction, costEstimator);
+        state = await applyAction(state, randomAction, costEstimator, scorer);
     }
 
     return state.accumulatedReward;
