@@ -1,4 +1,4 @@
-![Desires Generation Triggers](imgs/desires_generation_triggers.png)
+![Desires Generation Triggers](ideas exploration/imgs/desires_generation_triggers.png)
 
 ```
 Belief update (parcel/agent/map/self)
@@ -87,9 +87,9 @@ IN THIS CASE, THE AGENT WILL WAIT UNTIL A CLEAR PATH IS FOUND.**
 
 ## Graph maximum coverage
 This algorithm here is used to identify hotspots in the map that let, collectively, observe all the spawning tiles. The algorithm is based on a greedy approach to find the maximum coverage of the map with the minimum number of tiles.
-![Greedy Maximum Graph Coverage](imgs/greedy_maximum_graph_coverage.png)
+![Greedy Maximum Graph Coverage](ideas exploration/imgs/greedy_maximum_graph_coverage.png)
 For each area, I should identify a set of tiles that are able to make such observation, in order to fallback on those if the main one is occupied.
-![Maximum Coverage Location Problem](imgs/maximum_coverage_location_problem.jpeg)
+![Maximum Coverage Location Problem](ideas exploration/imgs/maximum_coverage_location_problem.jpeg)
 
 "Another agent is carrying the parcel" (current logic) is a hard fact: the goal is now literally impossible. This belongs in isValid() — a strict boolean gate, correctly named.
 - "Another agent is closer and heading there" is not a fact, it's a competitive estimate — they might not actually go for it, might get blocked, might change direction. Folding that into a boolean     
