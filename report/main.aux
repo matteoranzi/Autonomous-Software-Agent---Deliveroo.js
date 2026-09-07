@@ -1,0 +1,85 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{bratman1987}
+\citation{caillou2015}
+\citation{traldi2022}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Architectural Design}{1}{section.2}\protected@file@percent }
+\newlabel{sec:architecture}{{2}{1}{Architectural Design}{section.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Hybrid deliberation triggering.}{1}{section*.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces BDI agent architecture. Solid arrows show the main deliberation data flow; dashed arrows show read-only access to the belief base and the shared scoring services used by intention selection.}}{2}{figure.1}\protected@file@percent }
+\newlabel{fig:architecture}{{1}{2}{BDI agent architecture. Solid arrows show the main deliberation data flow; dashed arrows show read-only access to the belief base and the shared scoring services used by intention selection}{figure.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Beliefs}{2}{section.3}\protected@file@percent }
+\newlabel{sec:beliefs}{{3}{2}{Beliefs}{section.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Consistent sensing composition.}{2}{section*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Change-detection strategies.}{2}{section*.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Desires}{2}{section.4}\protected@file@percent }
+\newlabel{sec:desires}{{4}{2}{Desires}{section.4}{}}
+\citation{bratman1987}
+\citation{swiechowski2023mcts}
+\citation{norman2024satellite}
+\citation{liu2025fooddelivery}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Intentions and Monte Carlo Tree Search}{3}{section.5}\protected@file@percent }
+\newlabel{sec:intentions}{{5}{3}{Intentions and Monte Carlo Tree Search}{section.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Baseline: greedy selection}{3}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Logical state-space graph}{3}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:stategraph}{{5.2}{3}{Logical state-space graph}{subsection.5.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Fragment of the logical state-space graph. Nodes are desire-level abstractions of the game state; edges are desires weighted by memoised A* costs $c$ and rewarded by the fuzzy scorer. The graph is expanded lazily, only where the search visits it.}}{3}{figure.2}\protected@file@percent }
+\newlabel{fig:stategraph}{{2}{3}{Fragment of the logical state-space graph. Nodes are desire-level abstractions of the game state; edges are desires weighted by memoised A* costs $c$ and rewarded by the fuzzy scorer. The graph is expanded lazily, only where the search visits it}{figure.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}MCTS over desire sequences}{3}{subsection.5.3}\protected@file@percent }
+\citation{swiechowski2023mcts}
+\citation{saffiotti1997}
+\citation{li2004fuzzy}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces One MCTS iteration over the logical state space. Highlighted nodes form the most-visited (robust) path; the root child with the highest visit count ($s_1$, pickup $p_1$) becomes the committed intention.}}{4}{figure.3}\protected@file@percent }
+\newlabel{fig:mcts}{{3}{4}{One MCTS iteration over the logical state space. Highlighted nodes form the most-visited (robust) path; the root child with the highest visit count ($s_1$, pickup $p_1$) becomes the committed intention}{figure.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Fuzzy Logic as a Common Currency for Heterogeneous Metrics}{4}{section.6}\protected@file@percent }
+\newlabel{sec:fuzzy}{{6}{4}{Fuzzy Logic as a Common Currency for Heterogeneous Metrics}{section.6}{}}
+\citation{virkkala2011}
+\citation{peters2023}
+\@writefile{toc}{\contentsline {paragraph}{Fuzzification with game-derived scales.}{5}{section*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Rule base and defuzzification.}{5}{section*.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Left: cost membership functions on a $30{\times }30$ map (breakpoints at $9/18/30$ derived from $\mathit  {width}+\mathit  {height}=60$). Right: the Mamdani inference pipeline that turns heterogeneous metrics into a single comparable desirability score.}}{5}{figure.4}\protected@file@percent }
+\newlabel{fig:fuzzy}{{4}{5}{Left: cost membership functions on a $30{\times }30$ map (breakpoints at $9/18/30$ derived from $\mathit {width}+\mathit {height}=60$). Right: the Mamdani inference pipeline that turns heterogeneous metrics into a single comparable desirability score}{figure.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Planning, PDDL, and Anytime Plan Refinement}{5}{section.7}\protected@file@percent }
+\newlabel{sec:planning}{{7}{5}{Planning, PDDL, and Anytime Plan Refinement}{section.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}PDDL domain and problem generation}{5}{subsection.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Anytime planning via an extended PaaS}{6}{subsection.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Plan execution and failure recovery}{6}{subsection.7.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}LLM-Controlled Agent}{6}{section.8}\protected@file@percent }
+\newlabel{sec:llm}{{8}{6}{LLM-Controlled Agent}{section.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Architecture and execution flow}{7}{subsection.8.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces LLM-controlled agent pipeline. The map state, chat request, and persistent memory are aggregated into a single prompt; the LLM output is parsed into a parameterised command list (\texttt  {tool$_1$(x,y)}, \dots  , \texttt  {tool$_N$(x,y,z)}), which is then executed by the agent.}}{7}{figure.5}\protected@file@percent }
+\newlabel{fig:llm-pipeline}{{5}{7}{LLM-controlled agent pipeline. The map state, chat request, and persistent memory are aggregated into a single prompt; the LLM output is parsed into a parameterised command list (\texttt {tool$_1$(x,y)}, \dots , \texttt {tool$_N$(x,y,z)}), which is then executed by the agent}{figure.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Constrained plan interpreter and tools}{7}{subsection.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}MCP-based control of a second agent}{7}{subsection.8.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.4}Web interface}{8}{subsection.8.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Left: web-chat example --- the agent answers a natural-language request and generates a JSON plan with four coordinate-based movement actions. Right: a multi-step plan combining a bounded local collection loop, delivery actions, and remote MCP commands that direct the second agent to collect and deliver a hand-over parcel.}}{8}{figure.6}\protected@file@percent }
+\newlabel{fig:webchat-example}{{6}{8}{Left: web-chat example --- the agent answers a natural-language request and generates a JSON plan with four coordinate-based movement actions. Right: a multi-step plan combining a bounded local collection loop, delivery actions, and remote MCP commands that direct the second agent to collect and deliver a hand-over parcel}{figure.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {9}Validation and Calibration}{8}{section.9}\protected@file@percent }
+\newlabel{sec:validation}{{9}{8}{Validation and Calibration}{section.9}{}}
+\@writefile{toc}{\contentsline {paragraph}{Pathfinding benchmarks.}{8}{section*.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces A* pathfinding: total time to reach every valid tile from a random start. With move durations of at least 50\,ms, planning always fits well within a single movement tick.}}{8}{table.1}\protected@file@percent }
+\newlabel{tab:astar}{{1}{8}{A* pathfinding: total time to reach every valid tile from a random start. With move durations of at least 50\,ms, planning always fits well within a single movement tick}{table.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Data-driven fuzzy/MCTS calibration.}{8}{section*.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Scenario testing and observability.}{9}{section*.8}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Live terminal UI of the BDI agent on a $30{\times }30$ map: belief grid (agent, walls, spawner and delivery tiles), the generated exploration desires with their staleness evaluations, the change-detection strategies fired on the last belief update, and the committed intention annotated with its fuzzy desirability score.}}{9}{figure.7}\protected@file@percent }
+\newlabel{fig:bdi-log}{{7}{9}{Live terminal UI of the BDI agent on a $30{\times }30$ map: belief grid (agent, walls, spawner and delivery tiles), the generated exploration desires with their staleness evaluations, the change-detection strategies fired on the last belief update, and the committed intention annotated with its fuzzy desirability score}{figure.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {10}Conclusion and Future Development}{9}{section.10}\protected@file@percent }
+\newlabel{sec:future}{{10}{9}{Conclusion and Future Development}{section.10}{}}
+\citation{hildreth2019}
+\bibcite{bratman1987}{1}
+\bibcite{swiechowski2023mcts}{2}
+\bibcite{norman2024satellite}{3}
+\bibcite{liu2025fooddelivery}{4}
+\bibcite{caillou2015}{5}
+\bibcite{traldi2022}{6}
+\bibcite{saffiotti1997}{7}
+\bibcite{li2004fuzzy}{8}
+\bibcite{virkkala2011}{9}
+\bibcite{peters2023}{10}
+\bibcite{hildreth2019}{11}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.1}Future development}{10}{subsection.10.1}\protected@file@percent }
+\newlabel{sec:appendix}{{10.1}{11}{Appendix: PDDL pathfinding problem file}{section*.10}{}}
+\gdef \@abspage@last{11}
