@@ -1,7 +1,7 @@
 import OpenAI from 'openai'
-import {getLLMConfig} from "@/agents/LLM_Agent//llm-config";
-import {runPreflight} from "@/agents/LLM_Agent/preflight";
-import {printRunConfig} from "@/agents/LLM_Agent/startup";
+import {getLLMConfig} from "@/agents/_misc/llm-config";
+import {runPreflight} from "@/agents/_misc/preflight";
+import {printRunConfig} from "@/agents/_misc/startup";
 
 // import {main as mcpClient} from "@/exercises/fastmcp/client";
 

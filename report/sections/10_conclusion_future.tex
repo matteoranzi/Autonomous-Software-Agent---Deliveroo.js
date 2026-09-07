@@ -1,0 +1,50 @@
+\section{Conclusion and Future Development}
+\label{sec:future}
+
+The project delivers a BDI agent whose deliberation is genuinely modular --- event-driven belief
+revision, desire-level MCTS lookahead over a lazily built logical state space, fuzzy inference
+as a common scoring currency, and a layered A*/anytime-PDDL planning stack with composable
+failure recovery --- alongside an LLM-controlled agent with a safety-constrained plan
+interpreter and MCP-based control of a second agent. The interfaces introduced everywhere
+(selection strategies, reconsideration policies, pathfinders, recovery strategies,
+change-detection strategies) were a deliberate investment: each of the extensions below slots
+into an existing seam without touching the deliberation loop.
+
+\subsection{Future development}
+
+\begin{itemize}
+    \item \textbf{Hot-swappable intention strategies with online-tuned parameters.} Start each
+    match with \texttt{GreedyIntentionStrategy} --- cheap, reactive, and insensitive to branching
+    factor --- as a warm-up phase whose real purpose is data collection: observed cost and reward
+    ranges per desire category, effective branching factors, and map-specific traversal
+    statistics. Once enough evidence accumulates, a wrapper strategy hot-swaps to
+    \texttt{MCTSIntentionStrategy} (and to a matching commitment policy) whose fuzzy breakpoints
+    and search budget are calibrated from the collected statistics instead of configuration
+    heuristics --- automating online the manual run--log--tune loop used in
+    Section~\ref{sec:validation}. Because both strategies implement
+    \texttt{IIntentionStrategy}, the swap is invisible to \texttt{Intention}.
+    \item \textbf{Anytime plan hot-swapping during execution.} Extend the anytime PDDL
+    integration so that improved plans arriving \emph{while a plan is executing} are adapted to
+    the agent's current position and swapped in when strictly cheaper, rather than only bounding
+    the initial solve.
+    \item \textbf{Smarter exploration desires.} Replace per-spawner exploration desires with a
+    small set of \emph{observation hotspots} computed by a greedy maximum-coverage algorithm
+    over the spawner set, simultaneously improving exploration quality and collapsing the MCTS
+    root branching factor identified as the main search bottleneck.
+    \item \textbf{Inter-agent coordination.} Implement message-based coordination between the
+    BDI and LLM agents over the Deliveroo.js communication API --- handshake and role assignment,
+    periodic belief sharing (parcels and rivals seen outside the teammate's sensing range), and
+    parcel reservation to avoid targeting the same parcel; even minimal local communication is
+    known to yield strongly coordinated multi-agent navigation~\cite{hildreth2019}. In the same
+    step, route in-game messages from the mission agent into the LLM agent's request queue, so
+    that mission-agent requests are handled through the same constrained planning pipeline as
+    chat requests.
+    \item \textbf{Automated comparative benchmarks.} Extend the benchmark harness beyond
+    pathfinding to full-match comparisons (Greedy vs.\ MCTS intention selection, A*-only vs.\
+    A*+PDDL) with automated runs and result export across the challenge maps.
+    \item \textbf{Risk as a live signal.} Populate the currently unused risk input of the fuzzy
+    scorer from rival trajectory predictions (the belief base already tracks position
+    histories), re-enabling the risk rule family removed during calibration.
+    \item \textbf{Structured LLM memory.} Replace the plain-text persistent memory with a
+    validated, structured store.
+\end{itemize}

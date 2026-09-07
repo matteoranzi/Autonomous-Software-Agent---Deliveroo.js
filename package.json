@@ -6,7 +6,9 @@
     "build": "tsc && tsc-alias --resolve-full-paths && copyfiles -u 1 \"src/**/*.pddl\" dist",
     "run_compiled": "node dist/main.js",
     "main": "tsx src/main.ts",
-    "dev:main": "tsx watch src/main.ts"
+    "dev:main": "tsx watch src/main.ts",
+
+    "llm_agent": "node src/agents/LLM_Agent/main.js"
   },
   "author": "Matteo Ranzi, Luca Hardonk",
   "license": "MIT License",

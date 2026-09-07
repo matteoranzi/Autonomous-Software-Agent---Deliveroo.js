@@ -1,0 +1,28 @@
+\section{Introduction}
+
+This report documents the design and implementation of a team of autonomous software agents for
+the Deliveroo.js game, in which agents move on a grid map, pick up parcels whose reward decays
+over time, and deliver them to dedicated delivery tiles. The project comprises:
+
+\begin{itemize}
+    \item \textbf{Agent A}, a Belief--Desire--Intention~\cite{bratman1987} agent written in
+    TypeScript, designed in the spirit of practical, modular BDI
+    implementations~\cite{caillou2015,traldi2022}, whose
+    distinguishing features are (i) an event-driven belief-revision layer built on pluggable
+    change-detection strategies, (ii) intention selection performed by a Monte Carlo Tree Search
+    (MCTS) over a dynamically built, logical (desire-level) state-space graph, (iii) a
+    Mamdani-style fuzzy inference system used as the common reward signal that makes
+    heterogeneous metrics (cost, reward, urgency) comparable, and (iv) a layered planning stack
+    combining A* pathfinding with an \emph{anytime} PDDL planner able to push crates out of the
+    way (Sokoban-style), obtained by extending the open-source Planning-as-a-Service (PaaS)
+    infrastructure.
+    \item \textbf{Agent B}, an LLM-controlled agent that translates natural-language requests
+    into structured, bounded plans executed through a constrained interpreter, and that can drive
+    a second agent through a typed Model Context Protocol (MCP) interface.
+\end{itemize}
+
+The report follows the structure of the agent itself: beliefs
+(Section~\ref{sec:beliefs}), desires (Section~\ref{sec:desires}), intentions and MCTS
+(Section~\ref{sec:intentions}), fuzzy scoring (Section~\ref{sec:fuzzy}), planning and PDDL
+(Section~\ref{sec:planning}), the LLM agent (Section~\ref{sec:llm}), and validation
+(Section~\ref{sec:validation}).

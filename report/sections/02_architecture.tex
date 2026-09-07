@@ -1,0 +1,68 @@
+\section{Architectural Design}
+\label{sec:architecture}
+
+The BDI agent is organised as a pipeline of loosely coupled components, each behind an interface
+so that alternative implementations can be swapped without touching the deliberation loop
+(Figure~\ref{fig:architecture}). Raw socket payloads from the Deliveroo.js server are first
+normalised by a thin \emph{adapter} layer (\texttt{io/adapters/}) into internal types, decoupling
+the belief base from the wire format. The \texttt{Belief} object is the single source of truth;
+every downstream component (desire generation, intention selection, cost estimation, planning)
+reads from it and never from the network directly.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    font=\footnotesize,
+    node distance=5mm and 9mm,
+    box/.style={draw, rounded corners=1pt, align=center, minimum height=7mm, inner sep=3pt, fill=blue!5},
+    ext/.style={draw, align=center, minimum height=7mm, inner sep=3pt, fill=gray!12},
+    lbl/.style={font=\scriptsize\itshape, text=black!70},
+    arr/.style={-{Stealth[length=2mm]}, semithick}
+]
+% External
+\node[ext] (server) {Deliveroo.js\\server};
+\node[box, right=of server] (adapters) {IO adapters\\\texttt{map/config/sensing}};
+\node[box, right=of adapters] (belief) {\textbf{Belief}\\map, parcels,\\agents, crates};
+\node[box, right=of belief] (cds) {Change-detection\\strategies ($\times$16)};
+
+\node[box, below=9mm of cds] (desires) {DesiresGenerator\\pickup / deliver / explore};
+\node[box, left=of desires] (intention) {\textbf{Intention}\\selection strategy\\(Greedy / MCTS)};
+\node[box, left=of intention] (recon) {Reconsideration\\(single- / open-minded)};
+
+\node[box, below=9mm of recon] (planner) {\textbf{Planner}\\A* $\rightarrow$ anytime PDDL};
+\node[box, right=of planner] (executor) {PlanExecutor\\+ recovery strategies};
+\node[ext, right=of executor] (actions) {moves, pickup,\\putdown};
+
+% MCTS/fuzzy annotation
+\node[box, fill=orange!10, right=7mm of desires] (fuzzy) {Fuzzy scorer\\+ CostEstimator};
+
+\draw[arr] (server) -- node[above, lbl]{events} (adapters);
+\draw[arr] (adapters) -- (belief);
+\draw[arr] (belief) -- node[above, lbl]{diff} (cds);
+\draw[arr] (cds) -- node[right, lbl]{relevant changes} (desires);
+\draw[arr] (desires) -- (intention);
+\draw[arr] (intention) -- (recon);
+\draw[arr] (recon) -- node[left, lbl]{committed desire} (planner);
+\draw[arr] (planner) -- (executor);
+\draw[arr] (executor) -- (actions);
+\draw[arr, rounded corners=2mm] (actions.south) -- ++(0,-5mm) -| ($(server.west)+(-6mm,0)$) -- (server.west);
+\node[lbl] at ($(planner.south)!0.5!(executor.south) + (0,-7.5mm)$) {sensing feedback};
+\draw[arr, dashed] (fuzzy) -- (intention);
+\draw[arr, dashed] (belief.south) to[out=-90,in=60] (intention.north);
+\end{tikzpicture}
+\caption{BDI agent architecture. Solid arrows show the main deliberation data flow; dashed arrows
+show read-only access to the belief base and the shared scoring services used by intention
+selection.}
+\label{fig:architecture}
+\end{figure}
+
+\paragraph{Hybrid deliberation triggering.}
+The deliberation cycle (regenerate desires $\rightarrow$ deliberate $\rightarrow$ execute) is
+triggered by three sources rather than a fixed tick: (i) \emph{event-driven}, whenever a
+change-detection strategy reports a desire-relevant belief change; (ii) \emph{on completion or
+failure} of the current plan; and (iii) a low-frequency \emph{backstop timer} that catches
+reprioritisation caused purely by continuous reward decay, which is not a discrete sensing event.
+A purely periodic loop would either waste cycles when nothing changed or overlap expensive
+planning calls; a purely event-driven design would miss decay-driven changes. A re-entrancy
+guard serialises cycles: a trigger arriving while a cycle runs is remembered and replayed once,
+never dropped and never run concurrently.

@@ -1,0 +1,125 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[margin=2.2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+\usepackage[hidelinks]{hyperref}
+
+% compact lists without enumitem
+\let\olditemize\itemize
+\renewcommand{\itemize}{\olditemize\setlength{\itemsep}{1pt}\setlength{\topsep}{2pt}\setlength{\parsep}{0pt}}
+\let\oldenumerate\enumerate
+\renewcommand{\enumerate}{\oldenumerate\setlength{\itemsep}{1pt}\setlength{\topsep}{2pt}\setlength{\parsep}{0pt}}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  framerule=0.2pt,
+  showstringspaces=false,
+  keywordstyle=\bfseries,
+  commentstyle=\color{gray},
+}
+
+\title{\textbf{Deliveroo Autonomous Agent}\\[2pt]
+\large Project Report --- Autonomous Software Agents, A.A. 2025--2026}
+\author{
+  Matteo Ranzi\thanks{Matricola: 209449, Email: \texttt{matteo.ranzi@studenti.unitn.it}}
+  \and
+  Luca Hardonk\thanks{Matricola: 267750, Email: \texttt{luca.hardonk@studenti.unitn.it}}
+}
+\date{September 2026\\[4pt]
+\small Repository: \url{https://github.com/matteoranzi/Autonomous-Software-Agent---Deliveroo.js}}
+
+\begin{document}
+\maketitle
+
+\input{sections/01_introduction}
+\input{sections/02_architecture}
+\input{sections/03_beliefs}
+\input{sections/04_desires}
+\input{sections/05_intentions_mcts}
+\input{sections/06_fuzzy}
+\input{sections/07_planning_pddl}
+\input{sections/08_llm}
+\input{sections/09_validation}
+\input{sections/10_conclusion_future}
+
+\begin{footnotesize}
+\begin{thebibliography}{9}
+
+\bibitem{bratman1987}
+M.~E. Bratman.
+\newblock \emph{Intention, Plans, and Practical Reason}.
+\newblock Harvard University Press, 1987.
+
+\bibitem{swiechowski2023mcts}
+M.~Świechowski, K.~Godlewski, B.~Sawicki, and J.~Mańdziuk.
+\newblock Monte Carlo Tree Search: a review of recent modifications and applications.
+\newblock \emph{Artificial Intelligence Review}, 56:2497--2562, 2023.
+
+\bibitem{norman2024satellite}
+J.~Norman and F.~Rivest.
+\newblock Monte Carlo Tree Search satellite scheduling under cloud cover uncertainty.
+\newblock \emph{arXiv:2405.20951}, 2024.
+
+\bibitem{liu2025fooddelivery}
+L.~Liu, S.~Chen, H.~Jin, X.~Deng, Y.~Liu, and Y.~Lin.
+\newblock Optimizing on-demand food delivery with BDI-based multi-agent systems and Monte Carlo
+tree search scheduling.
+\newblock \emph{Scientific Reports}, 15:25083, 2025.
+
+\bibitem{caillou2015}
+P.~Caillou, B.~Gaudou, A.~Grignard, C.~Q. Truong, and P.~Taillandier.
+\newblock A simple-to-use BDI architecture for agent-based modeling and simulation.
+\newblock In \emph{Proc.\ of the 11th Conference of the European Social Simulation Association
+(ESSA)}, 2015.
+
+\bibitem{traldi2022}
+A.~Traldi, F.~Bruschetti, M.~Robol, D.~Calvaresi, M.~Roveri, and P.~Giorgini.
+\newblock Real-time BDI agents: a model and its implementation.
+\newblock \emph{arXiv:2205.00979}, 2022.
+
+\bibitem{saffiotti1997}
+A.~Saffiotti.
+\newblock The uses of fuzzy logic in autonomous robot navigation.
+\newblock \emph{Soft Computing}, 1(4):180--197, 1997.
+
+\bibitem{li2004fuzzy}
+Y.~Li, P.~Musilek, and L.~Wyard-Scott.
+\newblock Fuzzy logic in agent-based game design.
+\newblock In \emph{Proc.\ of the Annual Meeting of the North American Fuzzy Information
+Processing Society (NAFIPS)}, 2004.
+
+\bibitem{virkkala2011}
+T.~Virkkala.
+\newblock \emph{Solving Sokoban}.
+\newblock Master's thesis, University of Helsinki, 2011.
+
+\bibitem{peters2023}
+N.~S. Peters.
+\newblock \emph{Solving Sokoban Efficiently: Search Tree Pruning Techniques and Other
+Enhancements}.
+\newblock Bachelor's thesis, Technische Universität Berlin, 2023.
+
+\bibitem{hildreth2019}
+D.~Hildreth and S.~J. Guy.
+\newblock Coordinating multi-agent navigation by learning communication.
+\newblock \emph{Proc.\ ACM on Computer Graphics and Interactive Techniques}, 2(2), 2019.
+
+\end{thebibliography}
+\end{footnotesize}
+
+\clearpage
+\input{sections/11_appendix}
+
+\end{document}

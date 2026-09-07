@@ -1,4 +1,4 @@
-import {getLLMConfig} from "@/agents/LLM_Agent/llm-config";
+import {getLLMConfig} from "@/agents/_misc/llm-config";
 
 export function printRunConfig(): void {
     const { target, baseURL, model } = getLLMConfig();

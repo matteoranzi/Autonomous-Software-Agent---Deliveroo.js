@@ -1,0 +1,79 @@
+\section{Fuzzy Logic as a Common Currency for Heterogeneous Metrics}
+\label{sec:fuzzy}
+
+Desire evaluations mix quantities that live on incompatible scales: traversal cost (grid steps),
+expected reward (game points), and urgency (an ordinal priority). Early ad hoc utility formulas
+(e.g.\ $\log(\mathit{reward})/\log(\mathit{cost}+1)$ for pickups, $-\mathit{cost}$ for
+deliveries, pure staleness for exploration) were mutually incomparable, which is fatal for a
+search that must rank pickups \emph{against} deliveries \emph{against} exploration. The
+\texttt{FuzzyDesirabilityScorer} solves this with a Mamdani fuzzy inference system that maps
+every evaluation onto a single desirability scale $[0,100]$ (Figure~\ref{fig:fuzzy}) --- the same
+role fuzzy control plays in blending heterogeneous, uncertain signals in autonomous robot
+navigation~\cite{saffiotti1997} and in agent-based game behaviour design~\cite{li2004fuzzy}.
+
+\paragraph{Fuzzification with game-derived scales.} Cost and reward are fuzzified into
+\textsc{low}/\textsc{medium}/\textsc{high} sets built from shoulder and triangular membership
+functions. Crucially, the set breakpoints are not constants but are derived per match from the
+live game configuration: cost breakpoints as fractions ($0.15$, $0.30$, $0.50$) of the
+Manhattan-style upper bound $\mathit{width}+\mathit{height}$ (empirically a much better ceiling
+for obstacle-laden grid traversal than the Euclidean diagonal), and reward breakpoints as
+multiples ($0.3\times$, $1\times$, $1.75\times$) of the server-provided
+\texttt{reward\_average}. Anchoring on the average alone (rather than
+$\mu \pm \sqrt{\sigma^2}$) keeps the scale meaningful when \texttt{reward\_variance} is zero,
+and lets a multi-parcel delivery (summed reward) correctly read as \textsc{high}. The scorer is
+instantiated once per search, so the scale is computed once from the belief and shared across
+all evaluations of that search.
+
+\paragraph{Rule base and defuzzification.} A compact rule base combines the memberships with
+$\min$ (fuzzy AND), e.g.
+\emph{if cost is low and reward is high then desirability is high};
+\emph{if cost is high and reward is low then desirability is low};
+urgency contributes two crisp rules that pull the output toward \textsc{high} or \textsc{low}.
+Rules over \emph{risk} were deliberately removed after calibration showed they fired uniformly
+(no desire currently populates a non-zero risk) and only biased every score downward; they will
+return once a real risk signal exists. Following Mamdani inference, each fired rule clips its
+output set at its firing strength, the clipped sets are aggregated by fuzzy union, and the crisp
+score is the centroid of the aggregate, sampled numerically over $[0,100]$.
+
+This score is used uniformly across the agent: as the per-step reward inside MCTS rollouts, and
+by the open-minded reconsideration policy when comparing a challenger desire against the current
+commitment --- i.e.\ every comparison between options, wherever it happens, goes through the same
+fuzzy currency.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\scriptsize]
+% hand-drawn membership plot (x: 0..60 cost -> 0..5.4cm, y: 0..1 -> 0..1.6cm)
+\begin{scope}[xscale=0.09, yscale=1.6]
+  \draw[-{Stealth[length=1.6mm]}] (0,0) -- (66,0) node[right]{cost};
+  \draw[-{Stealth[length=1.6mm]}] (0,0) -- (0,1.3) node[left]{$\mu$};
+  \foreach \x in {9,18,30,60} \draw (\x,0.02) -- (\x,-0.02) node[below]{\tiny \x};
+  \draw (0.5,1) node[left]{\tiny 1};
+  \draw[thick, blue]   (0,1) -- (9,1) -- (18,0);
+  \draw[thick, orange] (9,0) -- (18,1) -- (60,0);
+  \draw[thick, red]    (18,0) -- (30,1) -- (60,1);
+  \node[blue, font=\tiny]   at (5,1.12) {low};
+  \node[orange, font=\tiny] at (21,1.12) {medium};
+  \node[red, font=\tiny]    at (44,1.12) {high};
+\end{scope}
+\begin{scope}[xshift=7.2cm, yshift=0.15cm,
+    b/.style={draw, rounded corners=1pt, align=center, inner sep=2.5pt, fill=orange!10, font=\tiny},
+    arr/.style={-{Stealth[length=1.6mm]}}]
+\node[b] (in) {crisp inputs\\cost, reward, urgency};
+\node[b, right=4mm of in] (fz) {fuzzification\\(game-derived\\breakpoints)};
+\node[b, right=4mm of fz] (rules) {Mamdani\\rule base};
+\node[b, below=4mm of rules] (agg) {clip + max\\aggregation};
+\node[b, left=4mm of agg] (df) {centroid\\defuzzification};
+\node[b, left=4mm of df, fill=blue!8] (out) {score $\in [0,100]$\\MCTS reward /\\reconsideration};
+\draw[arr] (in) -- (fz);
+\draw[arr] (fz) -- (rules);
+\draw[arr] (rules) -- (agg);
+\draw[arr] (agg) -- (df);
+\draw[arr] (df) -- (out);
+\end{scope}
+\end{tikzpicture}
+\caption{Left: cost membership functions on a $30{\times}30$ map (breakpoints at $9/18/30$
+derived from $\mathit{width}+\mathit{height}=60$). Right: the Mamdani inference pipeline that
+turns heterogeneous metrics into a single comparable desirability score.}
+\label{fig:fuzzy}
+\end{figure}

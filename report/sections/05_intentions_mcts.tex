@@ -1,0 +1,156 @@
+\section{Intentions and Monte Carlo Tree Search}
+\label{sec:intentions}
+
+The \texttt{Intention} component commits to a single desire at a time. Both of its policies are
+injected behind interfaces and swappable at construction time:
+
+\begin{itemize}
+    \item an \texttt{IIntentionStrategy} chooses \emph{what} to commit to
+    (\texttt{GreedyIntentionStrategy} or \texttt{MCTSIntentionStrategy});
+    \item an \texttt{IReconsiderationStrategy} decides \emph{whether to keep} the current
+    commitment as beliefs evolve mid-plan, implementing the canonical BDI commitment
+    spectrum~\cite{bratman1987}:
+    \emph{single-minded} (keep while still valid), \emph{open-minded} (drop a still-valid
+    intention when a rival option scores strictly higher under the fuzzy scorer), and an
+    intermediate policy that only switches to a higher-utility desire of the same kind.
+\end{itemize}
+
+\subsection{Baseline: greedy selection}
+\texttt{GreedyIntentionStrategy} partitions desires into pickup/deliver/explore buckets and
+applies fixed priorities (deliver when at capacity, otherwise best pickup, explore as fallback),
+selecting the highest-utility desire within the chosen bucket. It is cheap and reactive but
+myopic: it cannot recognise that \emph{pick up A, then B, then deliver both} dominates
+\emph{deliver immediately after A}.
+
+\subsection{Logical state-space graph}
+\label{sec:stategraph}
+To add lookahead, intention selection is cast as search over a \emph{logical} state space whose
+granularity is the desire, not the individual movement action. A node abstracts the physical
+game state into the tuple
+\[
+s = \langle \mathit{position},\; \mathit{carriedCount},\; \mathit{visited} \rangle,
+\]
+where \textit{position} is the goal tile of the last desire pursued, \textit{carriedCount} the
+number of carried parcels, and \textit{visited} the set of desires already consumed along the
+path from the root. An edge $s \xrightarrow{d} s'$ applies desire $d$: its traversal weight is
+the A* path cost between the two goal tiles (computed by a memoising \texttt{CostEstimator} from
+the \emph{simulated} position, not the agent's real one), and its immediate reward is the fuzzy
+desirability score of $d$ evaluated in $s$ (Section~\ref{sec:fuzzy}).
+
+The graph is never materialised up front: a dynamic transition function
+(\texttt{availableActions}) generates the outgoing edges of a node on demand, enforcing the
+game's logical constraints --- \emph{deliver} requires $\mathit{carriedCount} > 0$,
+\emph{pickup} requires spare capacity, each desire is consumed at most once per path, and
+invalid desires are never surfaced. This lazy construction is what makes the search tractable:
+only the fraction of the graph actually explored by MCTS is ever built.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    font=\scriptsize,
+    state/.style={draw, rounded corners=2pt, align=center, inner sep=2.5pt, fill=blue!6},
+    edge/.style={-{Stealth[length=1.8mm]}, semithick},
+    w/.style={font=\tiny, fill=white, inner sep=1pt},
+    dim/.style={draw=gray!60, dashed, rounded corners=2pt, align=center, inner sep=2.5pt, text=gray}
+]
+\node[state] (s0) {$s_0$: pos $(3,4)$\\carried $=1$};
+\node[state, above right=9mm and 30mm of s0] (s1) {$s_1$: pos $p_1$\\carried $=2$};
+\node[state, right=32mm of s0] (s2) {$s_2$: pos $D$\\carried $=0$};
+\node[state, below right=9mm and 30mm of s0] (s3) {$s_3$: pos $t_7$\\carried $=1$};
+\node[state, right=24mm of s1] (s4) {$s_4$: pos $D$\\carried $=0$};
+\node[dim, right=24mm of s3] (s5) {pickup $p_1$\\(not yet expanded)};
+\draw[edge] (s0) -- node[w, above, sloped]{pickup $p_1$, $c{=}6$} (s1);
+\draw[edge] (s0) -- node[w, above]{deliver $D$, $c{=}9$} (s2);
+\draw[edge] (s0) -- node[w, below, sloped]{explore $t_7$, $c{=}4$} (s3);
+\draw[edge] (s1) -- node[w, above]{deliver $D$, $c{=}5$} (s4);
+\draw[edge, dashed, gray] (s3) -- (s5);
+\end{tikzpicture}
+\caption{Fragment of the logical state-space graph. Nodes are desire-level abstractions of the
+game state; edges are desires weighted by memoised A* costs $c$ and rewarded by the fuzzy
+scorer. The graph is expanded lazily, only where the search visits it.}
+\label{fig:stategraph}
+\end{figure}
+
+\subsection{MCTS over desire sequences}
+\texttt{MCTSIntentionStrategy} runs the four canonical MCTS
+phases~\cite{swiechowski2023mcts} over this graph for a fixed iteration budget
+(Figure~\ref{fig:mcts}); casting the decision problem at the task level rather than the
+primitive-action level follows the way MCTS is applied to scheduling problems in dynamic,
+uncertain domains~\cite{norman2024satellite,liu2025fooddelivery}:
+
+\begin{enumerate}
+    \item \textbf{Selection}: from the root (the agent's real current state), descend through
+    fully expanded nodes by maximising UCB1,
+    $\overline{R}_i + c\sqrt{\ln N / n_i}$ with $c = \sqrt{2}$, balancing the exploitation of
+    high-reward desire sequences against the exploration of rarely tried ones.
+    \item \textbf{Expansion}: materialise one untried desire edge of the reached node,
+    computing the child state via the transition function of Section~\ref{sec:stategraph}.
+    \item \textbf{Simulation}: perform a random rollout of desires from the child down to a
+    fixed maximum depth (5 logical steps); the game has no terminal state, so the rollout value
+    is the accumulated fuzzy reward along the sampled sequence.
+    \item \textbf{Backpropagation}: add the rollout value to the visit and reward statistics of
+    every node on the path back to the root.
+\end{enumerate}
+
+The core loop is deliberately close to the textbook formulation:
+
+\begin{lstlisting}[language=Java]
+for (let i = 0; i < this.iterations; i++) {
+  let node = root;
+  // Selection: descend via UCB1 while fully expanded
+  while (node.isFullyExpanded && node.children.length > 0
+         && node.state.visited.size < this.maxDepth) {
+    node = selectChild(node, this.explorationConstant);
+  }
+  // Expansion: materialise one untried desire edge
+  if (!node.isFullyExpanded && node.state.visited.size < this.maxDepth) {
+    node = await expand(node, desires, costEstimator, scorer);
+  }
+  // Simulation + Backpropagation
+  const reward = await rollout(node.state, desires, costEstimator, scorer, this.maxDepth);
+  backpropagate(node, reward);
+}
+\end{lstlisting}
+
+After the budget is exhausted the strategy returns the \emph{robust
+child}~\cite{swiechowski2023mcts}: the root action with the highest visit count rather than the
+highest average reward, a standard choice that is less sensitive to a few lucky rollouts. Only the first desire of the best sequence is committed;
+the search is re-run on the next deliberation cycle against fresh beliefs, which keeps the
+lookahead honest in a dynamic, adversarial environment while the plan-level reactivity
+(Section~\ref{sec:planning}) handles the execution details.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    font=\scriptsize,
+    n/.style={draw, circle, inner sep=1.5pt, minimum size=5.5mm, fill=blue!6},
+    best/.style={draw, circle, inner sep=1.5pt, minimum size=5.5mm, fill=orange!25, thick},
+    sim/.style={draw=gray, circle, inner sep=1pt, minimum size=4mm, dashed},
+    edge/.style={-{Stealth[length=1.6mm]}, semithick},
+    lab/.style={font=\tiny, fill=white, inner sep=0.5pt},
+    phase/.style={font=\scriptsize\itshape, text=black!60}
+]
+\node[n] (root) {$s_0$};
+\node[best, below left=10mm and 26mm of root] (a) {$s_1$};
+\node[n, below=10mm of root] (b) {$s_2$};
+\node[n, below right=10mm and 26mm of root] (c) {$s_3$};
+\node[best, below left=10mm and 8mm of a] (a1) {$s_4$};
+\node[n, below right=10mm and 8mm of a] (a2) {$s_5$};
+\node[sim, below=7mm of a1] (r1) {};
+\node[sim, below=5mm of r1] (r2) {};
+\draw[edge] (root) -- node[lab, above, sloped]{pickup $p_1$, $n{=}31$} (a);
+\draw[edge] (root) -- node[lab, right, pos=0.7]{deliver, $n{=}12$} (b);
+\draw[edge] (root) -- node[lab, above, sloped]{explore, $n{=}7$} (c);
+\draw[edge] (a) -- node[lab, above, sloped]{deliver} (a1);
+\draw[edge] (a) -- node[lab, above, sloped]{pickup $p_2$} (a2);
+\draw[edge, dashed, gray] (a1) -- node[lab, right]{random rollout} (r1);
+\draw[edge, dashed, gray] (r1) -- (r2);
+\draw[edge, gray!70] (r2.west) to[out=160, in=-150] node[lab, left, pos=0.35]{backpropagate $\Sigma$ fuzzy reward} (root.west);
+\node[phase, right=18mm of root] {UCB1 selection, $c=\sqrt{2}$};
+\node[phase, below=1.5mm of r2] {depth-capped simulation};
+\end{tikzpicture}
+\caption{One MCTS iteration over the logical state space. Highlighted nodes form the
+most-visited (robust) path; the root child with the highest visit count ($s_1$, pickup $p_1$)
+becomes the committed intention.}
+\label{fig:mcts}
+\end{figure}

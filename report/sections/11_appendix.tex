@@ -1,0 +1,65 @@
+\appendix
+\section*{Appendix: PDDL pathfinding problem file}
+\label{sec:appendix}
+
+A complete (small) instance produced by the problem generator of
+Section~\ref{sec:planning}, corresponding to a $5{\times}4$ map fragment in which a crate blocks
+the only corridor to the goal; repetitive tile and adjacency declarations are elided with
+\texttt{[...]}.
+
+\begin{lstlisting}
+;; problem file: deliveroo-pathfinding (generated from the live Belief)
+(define (problem deliveroo-pathfinding)
+(:domain default)
+(:objects
+    player - sokoban
+    crate1 - crate
+    ; tiles named tile_<x>_<y>; only walkable cells become objects
+    tile_0_0 tile_1_0 tile_3_0
+    tile_0_1 tile_2_1 tile_3_1 tile_4_1
+    tile_0_2 tile_1_2 tile_3_2 tile_4_2
+    tile_0_3 tile_1_3 tile_2_3 tile_3_3 - tile
+)
+; ================================================
+; MAP (bottom-left origin, x rightward, y upward)
+;   3    f    f    f    f     .
+;   2    f    f    .    C|ac  f
+;   1    f    .    ac   ac    f
+;   0    A    f    .    O     .
+;  y/x   0    1    2    3     4
+; f: free-tile          ac: crates-allowed-tile
+; C: crate (tile_3_2)   A: agent start   O: goal
+; .: hole (no tile object, no adjacency)
+; ================================================
+(:init
+    (on player tile_0_0)
+    (on crate1 tile_3_2)
+    ; crates-allowed tiles (static)
+    (crates-allowed-tile tile_3_2)
+    (crates-allowed-tile tile_2_1)
+    (crates-allowed-tile tile_3_1)
+    ; free tiles (walkable and currently unoccupied)
+    (free-tile tile_1_0)
+    (free-tile tile_3_0)
+    (free-tile tile_0_1)
+    [...]
+    (free-tile tile_3_3)
+    ; directional adjacency between walkable tiles only
+    (adjacent-up tile_0_0 tile_0_1)
+    (adjacent-down tile_0_1 tile_0_0)
+    (adjacent-up tile_3_1 tile_3_2)
+    (adjacent-down tile_3_2 tile_3_1)
+    [...]
+    (adjacent-right tile_2_3 tile_3_3)
+    (adjacent-left tile_3_3 tile_2_3)
+)
+(:goal (on player tile_3_0))
+(:metric minimize (total-distance))
+)
+\end{lstlisting}
+
+The only plan reaching \texttt{tile\_3\_0} must walk around via row~3, \texttt{push-down} the
+crate from \texttt{tile\_3\_2} to \texttt{tile\_3\_1}, come around through column~4, and
+\texttt{push-left} it aside onto the \texttt{crates-allowed} tile \texttt{tile\_2\_1} before
+finally descending the freed corridor --- exactly the class of paths the A* pathfinder cannot
+produce.

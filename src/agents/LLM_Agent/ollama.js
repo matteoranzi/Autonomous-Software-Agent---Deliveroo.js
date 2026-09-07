@@ -1,8 +1,8 @@
 // ollama.js
 // Minimal client for a local Ollama instance (http://172.27.96.1:11434).
 
-const OLLAMA_URL   = process.env.OLLAMA_URL   ?? 'http://172.27.96.1:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? 'gemma4:26b';
+const OLLAMA_URL   = process.env.LOCAL_BASE_URL   ?? 'http://localhost:4000';
+const OLLAMA_MODEL = process.env.LOCAL_MODEL ?? 'gemma4:26b';
 export const OLLAMA_NUM_CTX = Number(process.env.OLLAMA_NUM_CTX ?? 32768);
 export const OLLAMA_TEMPERATURE = Number(process.env.OLLAMA_TEMPERATURE ?? 0.9);
 

@@ -1,0 +1,26 @@
+\section{Desires}
+\label{sec:desires}
+
+On every deliberation cycle \texttt{DesiresGenerator} regenerates the option set from the
+current belief and filters out invalid entries:
+
+\begin{itemize}
+    \item \textbf{PickupParcelDesire} --- one per known free parcel; the expected reward is the
+    parcel's current (decayed) reward, the cost the A*-estimated traversal cost.
+    \item \textbf{DeliverParcelDesire} --- one per delivery tile, applicable only while carrying;
+    the expected reward is the sum of the rewards of all carried parcels, so that a multi-parcel
+    delivery is correctly recognised as more valuable than a single-parcel one.
+    \item \textbf{ObserveParcelSpawningTileDesire} --- one per spawner tile currently outside the
+    agent's observation radius; its value is the tile's \emph{staleness} (a linear, capped
+    function of the time since last observation), which steers the agent toward regions of the
+    map it has not seen recently.
+\end{itemize}
+
+Each desire exposes a uniform evaluation record
+$\langle \mathit{estimatedCost}, \mathit{expectedReward}, \mathit{urgency}, \mathit{risk} \rangle$
+and a cheap \texttt{isValid()} predicate encoding \emph{hard} feasibility facts only (parcel
+still free and in place, delivery tile still reachable, spawner tile still unobserved). Soft,
+competitive judgements --- ``a rival is closer to that parcel'' --- are deliberately kept out of
+\texttt{isValid()} and left to the scoring layer, avoiding the oscillation caused by discarding
+desires on mere estimates. Validity is re-checked continuously: a desire invalidated mid-plan
+aborts the plan and triggers re-deliberation.

@@ -1,0 +1,95 @@
+\section{Planning, PDDL, and Anytime Plan Refinement}
+\label{sec:planning}
+
+Once a desire is committed, \texttt{Planner} turns it into a concrete action plan by trying an
+ordered chain of pathfinders and taking the first that succeeds:
+
+\begin{enumerate}
+    \item \textbf{A*} (\texttt{AStarPathFinder}) with Manhattan heuristic for plain navigation.
+    Benchmarks (Section~\ref{sec:validation}) show it comfortably fits inside a single movement
+    tick on every official map, so it is always attempted first.
+    \item \textbf{PDDL} (\texttt{PDDL\_PathFinder}) for situations A* cannot express ---
+    in particular maps where movable \emph{crates} block the only corridors and must be pushed
+    aside, a Sokoban-style problem that is genuinely relational rather than a shortest-path
+    query --- Sokoban is PSPACE-complete and a classic hard planning
+    benchmark~\cite{virkkala2011,peters2023}, which makes it exactly the kind of sub-problem
+    worth delegating to a planner.
+\end{enumerate}
+
+\subsection{PDDL domain and problem generation}
+The domain models the agent as a \texttt{sokoban} and crates as pushable objects, with typed
+\texttt{move-\{up,down,left,right\}} and \texttt{push-\{up,down,left,right\}} actions guarded by
+directional adjacency predicates, tile occupancy (\texttt{free-tile}), and
+\texttt{crates-allowed-tile} constraints, while a numeric fluent \texttt{total-distance}
+accumulates the plan metric to be minimised. The push actions are the relational heart of the domain:
+
+\begin{lstlisting}
+(:action push-up
+  :parameters (?sokoban - sokoban ?crate - crate
+               ?sokobanFromTile ?crateFromTile ?crateToTile - tile)
+  :precondition (and (on ?sokoban ?sokobanFromTile) (on ?crate ?crateFromTile)
+                     (adjacent-up ?sokobanFromTile ?crateFromTile)
+                     (adjacent-up ?crateFromTile ?crateToTile)
+                     (free-tile ?crateToTile) (crates-allowed-tile ?crateToTile))
+  :effect (and (free-tile ?sokobanFromTile) (not (on ?sokoban ?sokobanFromTile))
+               (not (on ?crate ?crateFromTile)) (not (free-tile ?crateToTile))
+               (on ?sokoban ?crateFromTile) (on ?crate ?crateToTile)
+               (increase (total-distance) 1)))
+\end{lstlisting}
+
+Problems are generated on demand from the live
+belief by a dedicated generator supporting two occupancy modes: \textsc{clean-map} (only static
+walls and crates constrain the problem) and \textsc{frozen-snapshot} (currently sensed rival
+positions are additionally frozen in as obstacles), trading optimism against congestion
+awareness. Tiles are emitted as objects \texttt{tile\_x\_y} only for walkable cells, with
+directional \texttt{adjacent-*} facts derived from the belief's grid, so plan steps can be
+translated back to grid moves deterministically.
+
+\subsection{Anytime planning via an extended PaaS}
+Sokoban-like problems can take a satisficing planner well into seconds, but a satisficing
+\emph{first} answer often arrives quickly and is then progressively improved. To exploit this,
+we extended the open-source planning infrastructure at both ends (an upstream pull request is
+in progress for the server side):
+
+\begin{itemize}
+    \item \textbf{Client} --- a published fork of \texttt{@unitn-asa/pddl-client}
+    (\texttt{@matteoranzi/pddl-client}) whose \texttt{onlineSolver} gains
+    (i)~\texttt{onImprovedPlan(plan, metric)}, a callback invoked every time an anytime planner
+    (e.g.\ OPTIC) reports a better solution while still searching, rather than a single result
+    at the end; (ii)~a per-request \texttt{maxTime} budget override; and (iii)~an
+    \texttt{AbortSignal} that not only stops the client from waiting but instructs the server to
+    kill the planner process, freeing the worker.
+    \item \textbf{Server} --- a fork of AI-Planning \texttt{planning-as-a-service}
+    (branch \texttt{feat/stream-anytime-progress}) that streams intermediate plans to the client
+    instead of buffering until the solver exits.
+\end{itemize}
+
+The agent uses these primitives to bound planning latency: as soon as the first improved plan
+arrives, the solve is aborted and the plan executed, capping worst-case waiting at the
+configured budget while still benefiting from any early improvement:
+
+\begin{lstlisting}[language=Java]
+const finalPlan = await onlineSolver(this.domainText, problem.toPddlString(), {
+  maxTime: this.maxSolvingTimeS,
+  signal: controller.signal,
+  onImprovedPlan: (improvedPlan, metric) => {
+    plan = improvedPlan;   // best plan streamed by the anytime planner so far
+    controller.abort();    // good enough: stop the solver, start executing
+  },
+});
+plan ??= finalPlan;
+\end{lstlisting} The same machinery is the
+substrate for a planned refinement --- hot-swapping the executing plan whenever the anytime
+planner later finds a strictly cheaper one, re-anchored to the agent's current position
+(Section~\ref{sec:future}).
+
+\subsection{Plan execution and failure recovery}
+\texttt{PlanExecutor} executes plans one action at a time, re-checking before every step that
+the committed desire is still valid and still committed --- so an intention switch or a belief
+change aborts the plan at the next step boundary, in classic BDI style. Failed actions
+(typically a rival occupying the next tile) are handled by composable recovery strategies
+implementing an escalation chain, e.g.\ \emph{retry $n$ times} $\rightarrow$ \emph{replan from
+the current position (up to $m$ times)} $\rightarrow$ \emph{abort and re-deliberate}. The
+strategy object is created fresh per execution, keeping retry budgets per-plan, and the
+decorator-style composition (\texttt{ReplanThenAbort} wrapping \texttt{RetryThenAbort}) makes
+persistence policies declarative and swappable.

@@ -1,0 +1,26 @@
+\section{Beliefs}
+\label{sec:beliefs}
+
+The belief base stores the static map (walkable tiles, spawner tiles, delivery tiles,
+crate-allowed tiles), the dynamic state of parcels, rival agents (with a bounded position
+history), crates, and the agent itself. Each tile additionally records a
+\texttt{lastTimeObserved} timestamp, which drives exploration (Section~\ref{sec:desires}).
+
+\paragraph{Consistent sensing composition.} The server emits self-state (\texttt{onYou}) and
+environment sensing (\texttt{onSensing}) as separate, uncoordinated socket events. Applying them
+independently would let listeners observe a half-updated belief. The agent therefore buffers the
+latest \texttt{onYou} payload and applies it atomically together with the next
+\texttt{onSensing} update, so every belief listener always observes both halves of a tick at
+once.
+
+\paragraph{Change-detection strategies.} Belief revision is not limited to overwriting state:
+a pluggable set of sixteen \emph{change-detection strategies} diffs each incoming update against
+the current belief and reports \emph{what actually changed} at the semantic level, e.g.\
+\texttt{NewParcelAppeared}, \texttt{FreeParcelVanished}, \texttt{RivalAgentPickedUpParcel},
+\texttt{RivalAgentEnteredDeliveryTile}, \texttt{SelfAgentDeliveredParcel},
+\texttt{CrateMoved}. Each triggered strategy also reports a \emph{degree} quantifying how
+significant the change is. Only desire-relevant changes wake the deliberation cycle, so the
+expensive generate--score--plan pipeline runs when the world meaningfully changed, not on every
+sensing packet. Dedicated estimators infer facts the server does not state explicitly, such as
+which agent picked up a vanished parcel (\texttt{ParcelCarriedByEstimator}) or rival movement
+between tiles (\texttt{AgentTileTransitionEstimator}).
