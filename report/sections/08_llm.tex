@@ -19,7 +19,17 @@ targets); \texttt{promptBuilder.js} combines the user message, a compact world s
 persistent memory (\texttt{memory.txt}, storing learned facts, reward observations, and
 strategy rules); \texttt{ollama.js} queries a local Ollama model; \texttt{parser.js} interprets
 and executes the returned plan; finally the agent resumes its fallback policy. A guard prevents
-concurrent request processing.
+concurrent request processing. Figure~\ref{fig:llm-pipeline} summarises this pipeline.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.56\linewidth, trim={50 250 90 20}, clip]{figures/llm_pipeline.jpg}
+    \caption{LLM-controlled agent pipeline. The map state, chat request, and persistent memory
+    are aggregated into a single prompt; the LLM output is parsed into a parameterised command
+    list (\texttt{tool$_1$(x,y)}, \dots, \texttt{tool$_N$(x,y,z)}), which is then executed by
+    the agent.}
+    \label{fig:llm-pipeline}
+\end{figure}
 
 Outside \texttt{LLM\_MODE}, the fallback strategy prioritises on-tile actions (pickup,
 delivery), then targets: deliver when carrying many parcels, move toward the nearest reachable
@@ -66,7 +76,7 @@ commands for the second agent.
     \end{minipage}\hfill
     \begin{minipage}[c]{0.30\linewidth}
         \centering
-        \includegraphics[height=8.6cm,keepaspectratio]{figures/complex_plan.jpg}
+        \includegraphics[height=7.8cm,keepaspectratio]{figures/complex_plan.jpg}
     \end{minipage}
     \caption{Left: web-chat example --- the agent answers a natural-language request and
     generates a JSON plan with four coordinate-based movement actions. Right: a multi-step plan

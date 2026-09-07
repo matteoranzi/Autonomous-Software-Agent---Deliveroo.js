@@ -27,8 +27,7 @@
     "@modelcontextprotocol/sdk": "^1.30.0",
     "express": "^5.2.1",
     "openai": "^7.4.0",
-    "zod": "^4.4.3",
-    "@unitn-asa/deliveroo-js-sdk": "^1.3.10"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "copyfiles": "^2.4.1",

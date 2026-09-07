@@ -13,7 +13,7 @@
       "name": "LLM_Agent",
       "type": "llm_agent",
       "enabled": true,
-      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMxN2YzMSIsIm5hbWUiOiJsbG0iLCJyb2xlIjoidXNlciIsImlhdCI6MTc4NjcyMDEwN30.oE1KabJ5BuSrb7U5yqPE4VGlaCqp8-Vde0Za-jW_uqY"
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQ4N2QzMCIsIm5hbWUiOiJhZ2VudDEiLCJyb2xlIjoidXNlciIsImlhdCI6MTc3NDM2NDU0MH0.0BiHE6OB39fUVU3229_9nn3qm2Ii7eKsvem3J-Sa8aY"
     }
   ]
 }
