@@ -74,15 +74,16 @@ Requires: Deliveroo.js server, PAAS.
 1. Set `HOST`/`TOKEN` and `PAAS_HOST`/`PAAS_PATH` in `.env`.
 2. `npm run main` (or `npm run build && npm run run_compiled` for a compiled run).
 
-### LLM Agent (experimental)
+### LLM Agent
 
 Requires: Deliveroo.js server, LiteLLM. A separate, plain-JS agent (`src/agents/LLM_Agent/`) that
 drives Deliveroo via an LLM through a LiteLLM proxy, with a live dashboard.
 
 1. Set `LLM_TARGET` + the matching `LOCAL_*`/`REMOTE_*` triplet in `.env`.
 2. Add game-server agent name/type/token entries to `src/agents/LLM_Agent/config.json`.
-3. `npm run llm_agent_dashboard` - dashboard at http://localhost:3001
-4. `npm run llm_agent` - spawns the agents listed in `config.json`
+3. `npm run llm_agent` - spawns the agents listed in `config.json`
+
+---
 
 ## Key Components
 
