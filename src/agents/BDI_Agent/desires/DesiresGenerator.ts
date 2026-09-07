@@ -2,7 +2,7 @@ import {Belief} from "@/agents/BDI_Agent/beliefs/Belief";
 import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
 import {PickupParcelDesire} from "@/agents/BDI_Agent/desires/PickupParcelDesire";
 import {DeliverParcelDesire} from "@/agents/BDI_Agent/desires/DeliverParcelDesire";
-import {ExploreParcelSpawningTileDesire} from "@/agents/BDI_Agent/desires/ExploreParcelSpawningTileDesire";
+import {ObserveParcelSpawningTileDesire} from "@/agents/BDI_Agent/desires/ObserveParcelSpawningTileDesire";
 
 class DesiresGenerator {
     belief: Belief;
@@ -25,7 +25,7 @@ class DesiresGenerator {
         }
 
         for (const spawnerTile of this.belief.parcelSpawnerTiles) {
-            this.desires.push( new ExploreParcelSpawningTileDesire(this.belief, spawnerTile));
+            this.desires.push( new ObserveParcelSpawningTileDesire(this.belief, spawnerTile));
         }
 
         return this;

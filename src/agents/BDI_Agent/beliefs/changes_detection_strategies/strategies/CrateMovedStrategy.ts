@@ -1,4 +1,4 @@
-import {DeliberationContext, IChangeDetectionStrategy, StrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
+import {DeliberationContext, IChangeDetectionStrategy, StrategyResult} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/IChangeDetectionStrategy";
 
 class CrateMovedStrategy implements IChangeDetectionStrategy {
     readonly name: string = "crate_moved";

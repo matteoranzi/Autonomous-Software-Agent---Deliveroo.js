@@ -3,7 +3,7 @@ import {IDesire} from "@/agents/BDI_Agent/desires/IDesire";
 import {Belief} from "@/agents/BDI_Agent/beliefs/Belief";
 import {PickupParcelDesire} from "@/agents/BDI_Agent/desires/PickupParcelDesire";
 import {DeliverParcelDesire} from "@/agents/BDI_Agent/desires/DeliverParcelDesire";
-import {ExploreParcelSpawningTileDesire} from "@/agents/BDI_Agent/desires/ExploreParcelSpawningTileDesire";
+import {ObserveParcelSpawningTileDesire} from "@/agents/BDI_Agent/desires/ObserveParcelSpawningTileDesire";
 import {pickHighestUtility} from "@/agents/BDI_Agent/intentions/utils";
 
 class GreedyIntentionStrategy implements IIntentionStrategy {
@@ -24,12 +24,12 @@ class GreedyIntentionStrategy implements IIntentionStrategy {
 
         const pickupDesires: PickupParcelDesire[] = [];
         const deliverDesires: DeliverParcelDesire[] = [];
-        const visitDesires: ExploreParcelSpawningTileDesire[] = [];
+        const visitDesires: ObserveParcelSpawningTileDesire[] = [];
 
         for (const desire of desires) {
             if (desire instanceof PickupParcelDesire) pickupDesires.push(desire);
             else if (desire instanceof DeliverParcelDesire) deliverDesires.push(desire);
-            else if (desire instanceof ExploreParcelSpawningTileDesire) visitDesires.push(desire);
+            else if (desire instanceof ObserveParcelSpawningTileDesire) visitDesires.push(desire);
         }
 
         let carriedParcels = 0;

@@ -1,18 +1,18 @@
-import {Goal, IDesire, IDesireEvaluation, PRIORITY} from "./IDesire";
+import {Goal, IDesire, IDesireEvaluation, PRIORITY, DesireCategory} from "./IDesire";
 import {Belief} from "@/agents/BDI_Agent/beliefs/Belief";
 import {positionsEqual} from "@/agents/BDI_Agent/utils";
 import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
-import {PredictivePlanner} from "@/agents/BDI_Agent/planning/PredictivePlanner";
+import {CostEstimator} from "@/agents/BDI_Agent/planning/CostEstimator";
 
 class PickupParcelDesire implements IDesire {
     readonly name: string = "pick_up_parcel_desire";
+    readonly category: DesireCategory = DesireCategory.PICKUP;
+
     readonly parcelId: string;
 
     goal: Goal;
 
     private readonly belief: Belief;
-    private evaluationCache: IDesireEvaluation | null = null;
-
 
     constructor(belief: Belief, parcelId: string) {
         this.parcelId = parcelId;
@@ -26,40 +26,34 @@ class PickupParcelDesire implements IDesire {
         } : {valid: false};
     }
 
-    // async evaluation(): Promise<IDesireEvaluation> {
-    //     if (this.evaluationCache) {
-    //         return this.evaluationCache;
-    //     }
-    //
-    //     this.evaluationCache = await this.evaluate();
-    //     return this.evaluationCache;
-    // }
-
     async evaluate(): Promise<IDesireEvaluation> {
-        const parcel = this.belief.parcels.get(this.parcelId);
-        if (!parcel) {
-            return {
-                utility: -Infinity,
-                estimatedCost: Infinity,
-                risk: 0,
-                urgency: PRIORITY.MEDIUM,
-                expectedReward: 0,
-                category: this.name
-            };
-        }
-
-        const predictivePlanner = new PredictivePlanner(this.belief);
-        const estimatedCost = await predictivePlanner.predictPlanCost(this.belief.me.position, this);
-        const expectedReward = parcel.reward;
-
-        return {
-            utility: Math.log(expectedReward) / Math.log(estimatedCost + 1),
-            estimatedCost: estimatedCost,
+        let desireEvaluation = {
+            utility: -Infinity,
+            estimatedCost: Infinity,
             risk: 0,
             urgency: PRIORITY.MEDIUM,
-            expectedReward,
+            expectedReward: 0,
             category: this.name
         };
+
+        const parcel = this.belief.parcels.get(this.parcelId);
+        if (!parcel) {
+            return desireEvaluation;
+        }
+
+        if (!this.goal.valid) {
+            return desireEvaluation;
+        }
+
+        const costEstimator = new CostEstimator(this.belief);
+        const estimatedCost = await costEstimator.estimateCost(this.belief.me.position, this.goal.position);
+        const expectedReward = parcel.reward;
+
+        desireEvaluation["utility"] = Math.log(expectedReward) / Math.log(estimatedCost + 1);
+        desireEvaluation["estimatedCost"] = estimatedCost;
+        desireEvaluation["expectedReward"] = expectedReward;
+
+        return desireEvaluation;
     }
 
     isValid(): boolean {

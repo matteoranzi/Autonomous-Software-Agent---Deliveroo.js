@@ -12,9 +12,9 @@ import {
     IChangeDetectionStrategy,
     ParcelsDiff, ParcelVanishReason,
     TriggeredStrategyResult,
-} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
-import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/ChangeDetectionStrategyBuilder";
-import {ChangeDetectionRunner} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/ChangeDetectionRunner";
+} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/IChangeDetectionStrategy";
+import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/ChangeDetectionStrategyBuilder";
+import {ChangeDetectionRunner} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/ChangeDetectionRunner";
 
 type GameMap = { width: number, height: number, grid: Tile[][] };
 type Position = { x: number, y: number };

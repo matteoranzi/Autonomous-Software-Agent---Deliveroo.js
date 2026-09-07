@@ -1,6 +1,6 @@
 // beliefs/events.ts
 import { EventEmitter } from 'events';
-import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
+import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/IChangeDetectionStrategy";
 
 interface BeliefEvents {
     // Carries every strategy that reported triggered=true this cycle (empty array on the

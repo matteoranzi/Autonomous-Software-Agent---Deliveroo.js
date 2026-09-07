@@ -4,8 +4,15 @@ import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
 type Goal = {valid: true, position: Position, finalAction: AgentActions | null}
     | {valid: false};
 
+enum DesireCategory {
+    PICKUP,
+    DELIVER,
+    EXPLORE,
+}
+
 interface IDesire {
     readonly name: string;
+    readonly category: DesireCategory;
     goal: Goal; // Where the Agent intends to head based on the info he had when he formed this desire
 
     // get evaluation(): Promise<IDesireEvaluation>;
@@ -15,8 +22,6 @@ interface IDesire {
     isValid(): boolean;
 }
 
-// TODO determine proper desire evaluation parameters
-//  e.g., "A rival is likely to beat me to this parcel" is precisely what risk is for
 interface IDesireEvaluation {
     utility: number;
     estimatedCost: number;
@@ -32,4 +37,4 @@ enum PRIORITY {
     HIGH = 3
 }
 
-export {IDesire, IDesireEvaluation, Goal, PRIORITY }
+export {IDesire, IDesireEvaluation, Goal, PRIORITY, DesireCategory}

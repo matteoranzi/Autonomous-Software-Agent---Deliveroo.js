@@ -1,17 +1,16 @@
 // DUMB EXPLORATION LOGIC FOR NOW, WILL BE REPLACED WITH A PROPER EXPLORATION LOGIC LATER
 
-import {Goal, IDesire, IDesireEvaluation, PRIORITY} from "@/agents/BDI_Agent/desires/IDesire";
+import {Goal, IDesire, IDesireEvaluation, PRIORITY, DesireCategory} from "@/agents/BDI_Agent/desires/IDesire";
 import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
-import {PredictivePlanner} from "@/agents/BDI_Agent/planning/PredictivePlanner";
+import {CostEstimator} from "@/agents/BDI_Agent/planning/CostEstimator";
 
-
-class ExploreParcelSpawningTileDesire implements IDesire {
+class ObserveParcelSpawningTileDesire implements IDesire {
     readonly name: string = "explore_parcel_spawning_tile";
+    readonly category: DesireCategory = DesireCategory.EXPLORE;
 
     goal: Goal;
 
     private readonly belief: Belief;
-    private evaluationCache: IDesireEvaluation | null = null;
 
 
     constructor(belief: Belief, parcelSpawnerTilePosition: Position) {
@@ -43,8 +42,8 @@ class ExploreParcelSpawningTileDesire implements IDesire {
             };
         }
 
-        const predictivePlanner = new PredictivePlanner(this.belief);
-        const estimatedCost = await predictivePlanner.predictPlanCost(this.belief.me.position, this);
+        const costEstimator = new CostEstimator(this.belief);
+        const estimatedCost = await costEstimator.estimateCost(this.belief.me.position, this.goal.position);
 
         // Grows the longer this tile has gone unobserved - a benefit/urgency signal, not a cost.
         const age = Date.now() - tile.lastTimeObserved;
@@ -75,4 +74,4 @@ class ExploreParcelSpawningTileDesire implements IDesire {
 
 }
 
-export {ExploreParcelSpawningTileDesire};
+export {ObserveParcelSpawningTileDesire};

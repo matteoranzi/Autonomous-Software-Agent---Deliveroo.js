@@ -1,0 +1,2 @@
+TODO: some detection strategies could trigger some greedy desires directly into the intentions.
+E.g. enteredParcelTile should trigger a desire to pick up the parcel without invalidating the current intention's plan.

@@ -1,4 +1,4 @@
-import {DeliberationContext, IChangeDetectionStrategy, TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
+import {DeliberationContext, IChangeDetectionStrategy, TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/IChangeDetectionStrategy";
 
 // Executes an ordered list of change-detection strategies against one cycle's context.
 class ChangeDetectionRunner {

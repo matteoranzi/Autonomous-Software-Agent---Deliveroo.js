@@ -1,5 +1,5 @@
-import {DeliberationContext, onlyAgent, IChangeDetectionStrategy, StrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
-import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/estimators/ParcelCarriedByEstimator";
+import {DeliberationContext, onlyAgent, IChangeDetectionStrategy, StrategyResult} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/IChangeDetectionStrategy";
+import {ParcelCarriedByEstimator} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/estimators/ParcelCarriedByEstimator";
 
 class SelfAgentDeliveredParcelStrategy implements IChangeDetectionStrategy {
     readonly name = 'self_agent_delivered_parcel';

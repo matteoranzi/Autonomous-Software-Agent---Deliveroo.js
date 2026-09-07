@@ -1,10 +1,11 @@
-import {Goal, IDesire, IDesireEvaluation, PRIORITY} from "./IDesire";
+import {Goal, IDesire, IDesireEvaluation, PRIORITY, DesireCategory} from "./IDesire";
 import {Belief, Position} from "@/agents/BDI_Agent/beliefs/Belief";
 import {AgentActions} from "@/agents/BDI_Agent/BDI_Agent";
-import {PredictivePlanner} from "@/agents/BDI_Agent/planning/PredictivePlanner";
+import {CostEstimator} from "@/agents/BDI_Agent/planning/CostEstimator";
 
 class DeliverParcelDesire implements IDesire {
     readonly name: string = "deliver_parcel_desire";
+    readonly category: DesireCategory = DesireCategory.DELIVER;
 
     goal: Goal;
 
@@ -39,8 +40,8 @@ class DeliverParcelDesire implements IDesire {
             };
         }
 
-        const predictivePlanner = new PredictivePlanner(this.belief);
-        const estimatedCost = await predictivePlanner.predictPlanCost(this.belief.me.position, this);
+        const costEstimator = new CostEstimator(this.belief);
+        const estimatedCost = await costEstimator.estimateCost(this.belief.me.position, this.goal.position);
 
         return {
             utility: -estimatedCost,

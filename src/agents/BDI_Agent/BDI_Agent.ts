@@ -11,8 +11,8 @@ import {Planner} from "@/agents/BDI_Agent/planning/Planner";
 import {PlanExecutor} from "@/agents/BDI_Agent/planning/PlanExecutor";
 import {RetryThenAbortFailedPlanStrategy} from "@/agents/BDI_Agent/planning/recover_plans_strategies/RetryThenAbortFailedPlanStrategy";
 import {ReplanThenAbortFailedPlanStrategy} from "@/agents/BDI_Agent/planning/recover_plans_strategies/ReplanThenAbortFailedPlanStrategy";
-import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/ChangeDetectionStrategyBuilder";
-import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
+import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/ChangeDetectionStrategyBuilder";
+import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/IChangeDetectionStrategy";
 import {Intention} from "@/agents/BDI_Agent/intentions/Intention";
 import {GreedyIntentionStrategy} from "@/agents/BDI_Agent/intentions/selection_strategies/GreedyIntentionStrategy";
 

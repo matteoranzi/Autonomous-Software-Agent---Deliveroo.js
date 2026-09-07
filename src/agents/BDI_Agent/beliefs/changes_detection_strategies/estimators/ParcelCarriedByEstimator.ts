@@ -1,4 +1,4 @@
-import {DeliberationContext, IChangeDetectionEstimator, ParcelVanishReason, StrategyResult} from "@/agents/BDI_Agent/beliefs/belief_changes_detection_strategies/IChangeDetectionStrategy";
+import {DeliberationContext, IChangeDetectionEstimator, ParcelVanishReason, StrategyResult} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/IChangeDetectionStrategy";
 
 // Interprets carriedByChanged/vanished into pickup/drop/delivered facts, for self and rivals alike.
 class ParcelCarriedByEstimator implements IChangeDetectionEstimator {

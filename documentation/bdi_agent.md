@@ -143,6 +143,28 @@ something mid-sequence invalidates the rest of that plan), which is future work,
 upgraded later to consume more of it without a breaking interface change - it just doesn't do                                                                                                         
 that yet. 
 
+## MonteCarlo Tree Search (MCTS)
+MCTSIntentionStrategy: Monte Carlo Tree Search over desires
+
+Context
+
+GreedyIntentionStrategy picks the single best desire per capacity/priority bucket, with no                                                                                                            
+lookahead - it can't reason about sequences ("pick up A, then B, then deliver both is better than                                                                                                     
+delivering after just A"). This task replaces/complements it with an IIntentionStrategy that                                                                                                          
+uses MCTS to search over sequences of desires, using CostEstimator-style costs as edge                                                                                                            
+weights and a genuine multi-factor (fuzzy) scoring function as the reward signal - closing the                                                                                                        
+"fuzzy logic scoring" gap flagged repeatedly earlier in this project (IDesireEvaluation's                                                                                                             
+utility field is currently computed with three incompatible, ad hoc formulas across the three                                                                                                         
+desire types: Pickup's log(reward)/log(cost+1), Deliver's -cost, Explore's pure staleness -                                                                                                           
+none of these are comparable to each other, which is exactly what a real scoring function needs                                                                                                       
+to fix).
+
+Resolved through discussion (see below for the reasoning, not just the conclusion):
+- Simulation state: lightweight, not a cloned Belief.
+- Rollout depth: fixed max depth (3-5 simulated steps), no terminal-state concept needed.
+- Reward composition: a true Mamdani-style fuzzy inference system.
+- Search budget: fixed iteration count (50-200) per select() call.
+
 ---
 
 # Planning
