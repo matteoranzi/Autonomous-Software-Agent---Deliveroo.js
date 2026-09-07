@@ -20,7 +20,7 @@
     "socket.io-client": "^4.6.0",
     "@types/node": "latest",
     "dotenv": "latest",
-
+    "openai": "latest",
     "@datastructures-js/priority-queue": "latest"
   },
   "devDependencies": {

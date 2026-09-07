@@ -14,7 +14,7 @@ import {ReplanThenAbortFailedPlanStrategy} from "@/agents/BDI_Agent/planning/rec
 import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/ChangeDetectionStrategyBuilder";
 import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/IChangeDetectionStrategy";
 import {Intention} from "@/agents/BDI_Agent/intentions/Intention";
-import {GreedyIntentionStrategy} from "@/agents/BDI_Agent/intentions/selection_strategies/GreedyIntentionStrategy";
+import {GreedyIntentionStrategy} from "@/agents/BDI_Agent/intentions/MCTSIntentionStrategy/GreedyIntentionStrategy";
 
 import { DjsConnect } from "@matteoranzi/deliveroo-js-sdk/client";
 import {PDDL_PathFinder} from "@/agents/BDI_Agent/planning/pathfinding/pddl/PDDL_PathFinder";

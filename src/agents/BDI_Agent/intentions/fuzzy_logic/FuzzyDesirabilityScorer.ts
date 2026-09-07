@@ -28,11 +28,12 @@ function triangle(x: number, risesFrom: number, peak: number, fallsTo: number): 
 // TODO calibrate and make configurable via .env
 const COST_LOW_MAX =5, COST_MID_PEAK = 10, COST_HIGH_MIN = 15;
 const REWARD_LOW_MAX = 5, REWARD_MID_PEAK = 15, REWARD_HIGH_MIN = 25;
-const RISK_HIGH_THRESHOLD = 0.5;
+const RISK_HIGH_THRESHOLD = 0.7;
 
 
 //=========================
 // Fuzzification
+
 type Memberships = {
     costLow: number,
     costMed: number,
