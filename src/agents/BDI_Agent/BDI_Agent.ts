@@ -14,7 +14,7 @@ import {ReplanThenAbortFailedPlanStrategy} from "@/agents/BDI_Agent/planning/rec
 import {ChangeDetectionStrategyBuilder} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/ChangeDetectionStrategyBuilder";
 import {TriggeredStrategyResult} from "@/agents/BDI_Agent/beliefs/changes_detection_strategies/IChangeDetectionStrategy";
 import {Intention} from "@/agents/BDI_Agent/intentions/Intention";
-import {GreedyIntentionStrategy} from "@/agents/BDI_Agent/intentions/MCTSIntentionStrategy/GreedyIntentionStrategy";
+import {GreedyIntentionStrategy} from "@/agents/BDI_Agent/intentions/selection_strategies/GreedyIntentionStrategy";
 
 import { DjsConnect } from "@matteoranzi/deliveroo-js-sdk/client";
 import {PDDL_PathFinder} from "@/agents/BDI_Agent/planning/pathfinding/pddl/PDDL_PathFinder";
@@ -25,6 +25,7 @@ import {
 import {
     SameKindHigherUtilityReconsideration
 } from "@/agents/BDI_Agent/intentions/reconsideration_policies/SameKindHigherUtilityReconsideration";
+import {MCTSIntentionStrategy} from "@/agents/BDI_Agent/intentions/selection_strategies/MCTSIntentionStrategy";
 
 enum AgentActions {
     PICKUP = "PICKUP",
@@ -75,7 +76,8 @@ class BDI_Agent {
 
     private async _run() {
         this.desiresGenerator = new DesiresGenerator(this.belief);
-        this.intention = new Intention(new GreedyIntentionStrategy(this.belief), new SameKindHigherUtilityReconsideration());
+        this.intention = new Intention(new MCTSIntentionStrategy(this.belief), new SameKindHigherUtilityReconsideration());
+        // this.intention = new Intention(new GreedyIntentionStrategy(this.belief), new SameKindHigherUtilityReconsideration());
 
         this.planner = new Planner([
             new AStarPathFinder(this.belief),

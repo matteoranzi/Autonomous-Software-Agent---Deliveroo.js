@@ -1,4 +1,4 @@
-import { getLLMConfig } from "@/llm/llm-config";
+import { getLLMConfig } from "@/agents/LLM_Agent/llm-config";
 
 export async function checkLiteLLM(): Promise<void> {
     const { baseURL } = getLLMConfig();
