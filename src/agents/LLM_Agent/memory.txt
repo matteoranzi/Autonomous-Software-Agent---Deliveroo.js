@@ -30,9 +30,9 @@ Respond with ONLY this JSON shape, nothing else:
 }  
   
 A step is one of:  
-1. Action:      { "tool": "<​name>", "args": { ... } }  
-2. Conditional: { "if": [ {"condition": "<​name>"} ], "then": [ ...steps... ], "else": [ ...steps... ] }  
-3. Loop:        { "loop": { "while": [ {"condition": "<​name>"} ], "do": [ ...steps... ] } }  
+1. Action:      { "tool": "<name>", "args": { ... } }
+2. Conditional: { "if": [ {"condition": "<name>"} ], "then": [ ...steps... ], "else": [ ...steps... ] }
+3. Loop:        { "loop": { "while": [ {"condition": "<name>"} ], "do": [ ...steps... ] } }
   
 Before building a plan, classify the message:  
 - INFORMATION: the user is telling you a fact, rule, reward, preference, or strategy to remember for later (no action requested right now). Examples: "you get 5x pts at (0,0)", "prefer tile X", "avoid area Y".  
@@ -73,7 +73,3 @@ Rules:
 - normally parcels are on spawing tiles, if you are looking for them go there
 Experience
 
-
-
-- Avoid tile (13, 12) because it results in losing all points.
-- Delivering exactly 5 parcels in one stack results in a loss of 1000 points.

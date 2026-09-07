@@ -45,29 +45,44 @@ Deliveroo-autonomous-agent/
 
 ## Getting Started
 
-### Installation
+### Install
 
-1. **Clone the repository and install dependencies:**
-   ```sh
-   git clone https://github.com/matteoranzi/Autonomous-Software-Agent---Deliveroo.js.git
-   cd Deliveroo-autonomous-agent
-   npm install
-   ```
+```sh
+git clone https://github.com/matteoranzi/Autonomous-Software-Agent---Deliveroo.js.git
+cd Deliveroo-autonomous-agent
+npm install
+cp .env.example .env
+```
 
-2. **Configure environment variables:**
-   Copy `.env.example` to `.env` and fill in your Deliveroo.js server host/token:
-   ```sh
-   cp .env.example .env
-   ```
-   A PAAS (Planning as a Service) is also required for the PDDL pathfinder.
+### Services
 
-   **Set up a Docker environment** following the instructions in the [Planutils Server Environment](https://github.com/AI-Planning/planutils/tree/main/environments/server) to set up the Docker environment required for the PDDL planners.
+Each agent depends on one or more external services, configured entirely through `.env`:
 
-3. **Run the agent:**
-   ```sh
-   npm run main
-   ```
-   For a compiled build: `npm run build && npm run run_compiled`.
+- **Deliveroo.js game server** - `HOST`/`TOKEN` for the BDI Agent; per-agent `host`/`token` in
+  `src/agents/LLM_Agent/config.json` for the LLM Agent.
+- **PAAS (Planning as a Service)** - `PAAS_HOST`/`PAAS_PATH`, required by the BDI Agent's
+  PDDL pathfinder (crate-pushing plans). Set up a local instance via the
+  [Planutils Server Environment](https://github.com/AI-Planning/planutils/tree/main/environments/server),
+  or point at a hosted one.
+- **LiteLLM** - `LLM_TARGET` (`local`/`remote`) plus the matching `LOCAL_*`/`REMOTE_*` triplet
+  (base URL, API key, model), required by the LLM Agent.
+
+### BDI Agent
+
+Requires: Deliveroo.js server, PAAS.
+
+1. Set `HOST`/`TOKEN` and `PAAS_HOST`/`PAAS_PATH` in `.env`.
+2. `npm run main` (or `npm run build && npm run run_compiled` for a compiled run).
+
+### LLM Agent (experimental)
+
+Requires: Deliveroo.js server, LiteLLM. A separate, plain-JS agent (`src/agents/LLM_Agent/`) that
+drives Deliveroo via an LLM through a LiteLLM proxy, with a live dashboard.
+
+1. Set `LLM_TARGET` + the matching `LOCAL_*`/`REMOTE_*` triplet in `.env`.
+2. Add game-server agent name/type/token entries to `src/agents/LLM_Agent/config.json`.
+3. `npm run llm_agent_dashboard` - dashboard at http://localhost:3001
+4. `npm run llm_agent` - spawns the agents listed in `config.json`
 
 ## Key Components
 

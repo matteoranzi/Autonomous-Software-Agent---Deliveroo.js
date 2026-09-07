@@ -1,7 +1,7 @@
 import { WorldModel } from './WorldModel.js';
 import { ServerIO }   from './ServerIO.js';
 import { startWebChat } from './webchat.js';
-import { queryOllama, OLLAMA_NUM_CTX } from './ollama.js';
+import { queryLLM, LLM_CONTEXT_WINDOW } from './llmClient.js';
 import { buildPrompt } from './promptBuilder.js';
 import { DjsConnect } from '@unitn-asa/deliveroo-js-sdk/client';
 import { runPlan } from './parser.js';
@@ -31,7 +31,7 @@ export class LlmAgent {
         this.target = null;
 
         this.inputQueue = [];
-        this.llmModeBusy = false; // true while waiting on Ollama's response
+        this.llmModeBusy = false; // true while waiting on the LLM's response
         this.sendReply = () => {}; // set in setup()
     }
 
@@ -76,7 +76,7 @@ export class LlmAgent {
 
     /**
      * Consumes the next queued chat text (if any), freezes the agent in
-     * LLM_MODE, sends the built payload to Ollama, executes any planned tool
+     * LLM_MODE, sends the built payload to the LLM, executes any planned tool
      * calls in order, and releases the agent as soon as the whole turn
      * (including all resulting tool calls) has finished.
      */
@@ -91,33 +91,33 @@ export class LlmAgent {
         // ── Enter LLM_MODE: freeze normal loop behavior until this resolves ──  
         this.state = STATE.LLM_MODE;  
         this.llmModeBusy = true;  
-        log(this.name, 'llm_mode', 'entering LLM_MODE — waiting for Ollama response');  
+        log(this.name, 'llm_mode', 'entering LLM_MODE — waiting for LLM response');
     
         // Build the structured context payload (tools, world snapshot, memory, chat).  
         const payload = buildPrompt(this, text);  
         console.log(`[${this.name}][payload]`, JSON.stringify(payload, null, 2));  
     
-        queryOllama(JSON.stringify(payload))  
-            .then(async ({ message, promptTokens, replyTokens }) => {  
-                // ── Context usage logging ──  
-                const totalTokens = promptTokens + replyTokens;  
-                log(this.name, 'context', `prompt=${promptTokens} reply=${replyTokens} total=${totalTokens}/${OLLAMA_NUM_CTX}`);  
-    
-                const rawText = message.content ?? '';  
-                console.log(`[${this.name}][ollama][raw] ${rawText}`);  
+        queryLLM(JSON.stringify(payload))
+            .then(async ({ message, promptTokens, replyTokens }) => {
+                // ── Context usage logging ──
+                const totalTokens = promptTokens + replyTokens;
+                log(this.name, 'context', `prompt=${promptTokens} reply=${replyTokens} total=${totalTokens}/${LLM_CONTEXT_WINDOW}`);
+
+                const rawText = message.content ?? '';
+                console.log(`[${this.name}][llm][raw] ${rawText}`);
     
                 // ── Parse the LLM's JSON output: { plan: [...], chat: "..." } ──  
                 let response;  
                 try {  
                     response = JSON.parse(rawText);  
                 } catch (e) {  
-                    console.error(`[${this.name}][ollama] invalid JSON: ${e.message}`);  
-                    this.sendReply(`[error: model did not return valid JSON]`);  
-                    return;  
-                }  
-    
-                if (!response || !Array.isArray(response.plan)) {  
-                    console.warn(`[${this.name}][ollama] response missing valid "plan" array`);  
+                    console.error(`[${this.name}][llm] invalid JSON: ${e.message}`);
+                    this.sendReply(`[error: model did not return valid JSON]`);
+                    return;
+                }
+
+                if (!response || !Array.isArray(response.plan)) {
+                    console.warn(`[${this.name}][llm] response missing valid "plan" array`);
                     if (response?.chat) this.sendReply(response.chat);  
                     return;  
                 }  
@@ -133,7 +133,7 @@ export class LlmAgent {
                 console.log(`[${this.name}][plan] ${results.length} step(s) executed, ${failed.length} failed`);  
             })  
             .catch((e) => {  
-                console.error(`[${this.name}][ollama] error:`, e.message);  
+                console.error(`[${this.name}][llm] error:`, e.message);
                 this.sendReply(`[error: ${e.message}]`);  
             })  
             .finally(() => {  
@@ -185,19 +185,4 @@ export class LlmAgent {
         const moved = await stepToward(this, this.target);
         if (!moved) this.target = null;
     }
-}
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-    const NAME  = process.env.AGENT_NAME  ?? 'agent1';
-    const HOST  = process.env.HOST        ?? 'http://localhost:3000';
-    const TOKEN = process.env.TOKEN       ?? '';
-
-    const agent = new LlmAgent({ name: NAME, host: HOST });
-
-    agent.setup(TOKEN).then(() => {
-        setInterval(() => agent.loop(), 1000);
-    }).catch((e) => {
-        console.error(e);
-        process.exit(1);
-    });
 }

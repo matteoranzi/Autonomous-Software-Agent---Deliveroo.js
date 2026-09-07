@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BdiLlmTestAgent } from './bdi_llm_test/BdiLlmTestAgent.js';
 import { LlmAgent }        from './LlmAgent.js';
+import { checkLLMReachable } from './llmClient.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -30,6 +31,16 @@ const activeAgents = config.agents.filter((a) => a.enabled !== false);
 if (!activeAgents.length) throw new Error('No enabled agents in config.json');
 
 console.log(`▶  Starting ${activeAgents.length} agent(s): ${activeAgents.map((a) => a.name).join(', ')}\n`);
+
+// ── Preflight ─────────────────────────────────────────────────────────────────
+// Fail fast if the LLM proxy isn't reachable, instead of only finding out once an
+// llm_agent tries to make its first prompt call.
+
+if (activeAgents.some((a) => a.type === 'llm_agent')) {
+    if (!(await checkLLMReachable())) {
+        throw new Error('LLM proxy is not reachable - check LLM_TARGET/LOCAL_*/REMOTE_* in .env');
+    }
+}
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 // Sequential: if any agent fails to connect, the whole process stops.
